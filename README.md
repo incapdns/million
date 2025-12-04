@@ -1,4 +1,8 @@
-> Want to **automatically find and fix performance issues**? Check out [Million Lint](https://million.dev/).
+> I'm working on something new (still free + open source!)
+> 
+> React Grab allows you to select an element and copy its context (like HTML, React component, and file source)
+>
+> Check it out: [**react-grab.com**](https://react-grab.com)
 
 <a href="https://million.dev">
   <img src="https://raw.githubusercontent.com/aidenybai/million/main/.github/assets/banner.png" alt="Million.js Banner" />
