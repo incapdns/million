@@ -14,7 +14,7 @@ import { cloneNode$ } from '../million/dom';
 import { Effect, REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
-import { currentFn } from './dynamic';
+import { currentFn, resolveHoles } from './dynamic';
 
 export const block = <P extends MillionProps>(
   fn: ComponentType<P> | null,
@@ -57,7 +57,7 @@ export const block = <P extends MillionProps>(
 
       raw.__million_map.forEach((node, key) => {
         // @ts-ignore
-        props[key] = node;
+        props[key] = resolveHoles(node, props);
       });
     }
 
