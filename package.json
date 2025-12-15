@@ -123,7 +123,8 @@
     "lint": "eslint ./packages --ext .ts --cache",
     "lint:fix": "pnpm lint --fix",
     "test": "vitest run --coverage",
-    "test:dev": "vitest watch"
+    "test:dev": "vitest watch",
+    "prepare": "npm run build"
   },
   "prettier": "@vercel/style-guide/prettier",
   "dependencies": {
