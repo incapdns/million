@@ -159,7 +159,9 @@ export const removeComments = (el: Node) => {
     return;
   }
   if (el.nodeType === 8) {
-    el.parentNode?.removeChild(el);
+    if (el.nodeValue !== '$') {
+      el.parentNode?.removeChild(el);
+    }
   }
   let child: ChildNode | null = firstChild$.call(el);
   while (child) {

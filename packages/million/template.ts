@@ -46,7 +46,7 @@ export const renderToTemplate = (
       i: [],
     });
 
-    return '<slot/>';
+    return '<!--$-->';
   }
 
   let props = '';
@@ -197,6 +197,9 @@ export const renderToTemplate = (
         /* patch */ p: null,
         /* block */ b: null,
       });
+
+      children += '<!--$-->';
+      canMergeString = false;
       continue;
     }
 
