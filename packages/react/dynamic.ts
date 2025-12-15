@@ -32,6 +32,7 @@ export const resolveHoles = (vnode: any, currentProps: any): any => {
 
   // 3. Se for um Elemento React Válido, inspecionamos as props
   if (isValidElement(vnode)) {
+    // @ts-ignore
     const newProps = { ...vnode.props };
     let hasChanges = false;
 
@@ -40,6 +41,7 @@ export const resolveHoles = (vnode: any, currentProps: any): any => {
       
       // Verifica se a PROP é um Hole
       if (val && typeof val === 'object' && '$' in val) {
+        // @ts-ignore
         newProps[key] = currentProps[val.$];
         hasChanges = true;
       }
