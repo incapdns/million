@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode, Ref } from 'react';
 import type { VNode } from '../million';
 import type { MillionPortal } from '../types';
 import { REGISTRY, RENDER_SCOPE } from './constants';
+import { DYNAMIC } from './dynamic';
 
 export const scopedContext = createContext<boolean>(false);
 
@@ -108,6 +109,13 @@ export const renderReactScope = (
 };
 
 export const unwrap = (vnode: JSX.Element | null): VNode => {
+  let raw = vnode as any;
+  if (raw.__kind == DYNAMIC) {
+    const key = `__int_dyn_${raw.__million_map.size}`;
+    raw.__million_map.set(key, vnode.node);
+    return { $: key } as unknown as VNode;
+  }
+
   if (typeof vnode !== 'object' || vnode === null || !('type' in vnode)) {
     if (typeof vnode === 'number') {
       return String(vnode);

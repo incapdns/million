@@ -14,12 +14,7 @@ import { cloneNode$ } from '../million/dom';
 import { Effect, REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
-
-const DYNAMIC = Symbol("million_dynamic");
-
-export const dynamic = <P>(node: P): P => {
-  return { __kind: DYNAMIC, node } as any;
-}
+import { currentFn } from './dynamic';
 
 export const block = <P extends MillionProps>(
   fn: ComponentType<P> | null,
@@ -30,25 +25,17 @@ export const block = <P extends MillionProps>(
   let blockTarget: ReturnType<typeof createBlock> | null = options?.block;
   const defaultType = options?.svg ? SVG_RENDER_SCOPE : RENDER_SCOPE;
 
-  const internalDynamicMap = new Map<string, any>();
-  let dynamicIdx = 0;
-
-  const interceptUnwrap = (vnode: any) => {
-    if (vnode && vnode.__kind === DYNAMIC) {
-      const key = `__int_dyn_${dynamicIdx++}`;
-      internalDynamicMap.set(key, vnode.node);
-      return { $: key };
-    }
-    return unwrap(vnode);
-  };
-
   if (fn) {
+    currentFn.context = fn;
+
     blockTarget = createBlock(
       fn as any,
-      interceptUnwrap as any,
+      unwrap as any,
       options?.shouldUpdate as Parameters<typeof createBlock>[2],
       options?.svg,
     );
+
+    currentFn.context = undefined;
   }
 
   const MillionBlock = <P extends MillionProps>(
@@ -62,13 +49,17 @@ export const block = <P extends MillionProps>(
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
 
-    // @ts-ignore
-    props = { ...props };
+    const raw = fn as any;
 
-    internalDynamicMap.forEach((node, key) => {
+    if(raw.__million_map != undefined) {
       // @ts-ignore
-      props[key] = node;
-    });
+      props = { ...props };
+
+      raw.__million_map.forEach((node, key) => {
+        // @ts-ignore
+        props[key] = node;
+      });
+    }
 
     props = processProps(props, forwardedRef, portalRef.current);
 
