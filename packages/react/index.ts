@@ -2,6 +2,7 @@ import { block as internalBlock, patch, mount } from '../million';
 
 export { block } from './block';
 export { dynamic } from './dynamic';
+export { execute } from './execute';
 export { For } from './for';
 export { If } from './if';
 export { renderReactScope, unwrap } from './utils';
