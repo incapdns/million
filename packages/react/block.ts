@@ -1,4 +1,4 @@
-import { createElement, Fragment, useCallback, useMemo, useRef } from 'react';
+import { createElement, Fragment, useCallback, useMemo, useRef, JSX } from 'react';
 import type { ComponentType, Ref } from 'react';
 import {
   block as createBlock,
@@ -15,6 +15,12 @@ import { Effect, REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
 
+const DYNAMIC = Symbol("million_dynamic");
+
+export const dynamic = <P>(node: P): P => {
+  return { __kind: DYNAMIC, node } as any;
+}
+
 export const block = <P extends MillionProps>(
   fn: ComponentType<P> | null,
   options: Options<P> | null | undefined = {},
@@ -24,10 +30,22 @@ export const block = <P extends MillionProps>(
   let blockTarget: ReturnType<typeof createBlock> | null = options?.block;
   const defaultType = options?.svg ? SVG_RENDER_SCOPE : RENDER_SCOPE;
 
+  const internalDynamicMap = new Map<string, any>();
+  let dynamicIdx = 0;
+
+  const interceptUnwrap = (vnode: any) => {
+    if (vnode && vnode.__kind === DYNAMIC) {
+      const key = `__int_dyn_${dynamicIdx++}`;
+      internalDynamicMap.set(key, vnode.node);
+      return { $: key };
+    }
+    return unwrap(vnode);
+  };
+
   if (fn) {
     blockTarget = createBlock(
       fn as any,
-      unwrap as any,
+      interceptUnwrap as any,
       options?.shouldUpdate as Parameters<typeof createBlock>[2],
       options?.svg,
     );
@@ -44,7 +62,16 @@ export const block = <P extends MillionProps>(
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
 
+    // @ts-ignore
+    props = { ...props };
+
+    internalDynamicMap.forEach((node, key) => {
+      // @ts-ignore
+      props[key] = node;
+    });
+
     props = processProps(props, forwardedRef, portalRef.current);
+
     patch.current?.(props);
 
     const effect = useCallback(() => {
@@ -69,9 +96,8 @@ export const block = <P extends MillionProps>(
           // eslint-disable-next-line no-console
           console.error(
             new Error(`\`experimental_options.noSlot\` does not support having siblings at the moment.
-The block element should be the only child of the \`${
-              (cloneNode$.call(ref.current) as HTMLElement).outerHTML
-            }\` element.
+The block element should be the only child of the \`${(cloneNode$.call(ref.current) as HTMLElement).outerHTML
+              }\` element.
 To avoid this error, \`experimental_options.noSlot\` should be false`),
           );
         }

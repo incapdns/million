@@ -1,6 +1,6 @@
 import { block as internalBlock, patch, mount } from '../million';
 
-export { block } from './block';
+export { block, dynamic } from './block';
 export { For } from './for';
 export { renderReactScope, unwrap } from './utils';
 export { REGISTRY } from './constants';
