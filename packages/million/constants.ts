@@ -29,3 +29,5 @@ export const X_CHAR = 120;
 export const NON_PROPS = new Set$(['href', 'list', 'form', 'tabIndex', 'download']);
 // prettier-ignore
 export const VOID_ELEMENTS = new Set$(["area", "base", "basefont", "bgsound", "br", "col", "command", "embed", "frame", "hr", "image", "img", "input", "isindex", "keygen", "link", "menuitem", "meta", "nextid", "param", "source", "track", "wbr"]);
+
+export const EXEC_KEY = Symbol("million_exec");

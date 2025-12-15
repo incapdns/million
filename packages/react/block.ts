@@ -57,7 +57,7 @@ export const block = <P extends MillionProps>(
 
       raw.__million_map.forEach((node, key) => {
         // @ts-ignore
-        props[key] = resolveHoles(node, props);
+        props[key] = resolveHoles({ vnode: node, props });
       });
     }
 

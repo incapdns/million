@@ -21,17 +21,17 @@ export const dynamic = <P>(node: P): P => {
   } as any;
 }
 
-export const resolveHoles = (vnode: any, currentProps: any): any => {
+export const resolveHoles = ({ vnode, props }: any): any => {
   if (!vnode || typeof vnode !== 'object') return vnode;
 
   if ('$' in vnode) {
-    return currentProps[vnode.$];
+    return props[vnode.$];
   }
 
   if (Array.isArray(vnode)) {
     let hasChanges = false;
     const newArray = vnode.map((item) => {
-      const resolved = resolveHoles(item, currentProps);
+      const resolved = resolveHoles({ vnode: item, props });
       if (resolved !== item) hasChanges = true;
       return resolved;
     });
@@ -45,7 +45,7 @@ export const resolveHoles = (vnode: any, currentProps: any): any => {
     for (const key in newProps) {
       const oldValue = newProps[key];
       
-      const newValue = resolveHoles(oldValue, currentProps);
+      const newValue = resolveHoles({ vnode: oldValue, props });
 
       if (oldValue !== newValue) {
         newProps[key] = newValue;
@@ -64,7 +64,7 @@ export const resolveHoles = (vnode: any, currentProps: any): any => {
 
     for (const key in newObj) {
       const oldValue = newObj[key];
-      const newValue = resolveHoles(oldValue, currentProps);
+      const newValue = resolveHoles({ vnode: oldValue, props });
 
       if (oldValue !== newValue) {
         newObj[key] = newValue;

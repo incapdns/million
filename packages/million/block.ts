@@ -30,6 +30,7 @@ import {
 } from './constants';
 import type { ArrayBlock } from './array';
 import type { EditChild, VElement, Hole, VNode, Edit } from './types';
+import { EXEC_KEY } from 'packages/million/constants';
 
 const HOLE_PROXY = new Proxy(
   {},
@@ -107,6 +108,39 @@ export const patch = (
   return el;
 };
 
+type ArrayType<T> = T extends Array<infer U> ? U : T;
+
+const processValue = (
+  edit: ArrayType<Edit['e']>,
+  props: MillionProps
+): any => {
+  const rawValue = edit.h ? props[edit.h] : edit.v;
+
+  let value = (edit.h === null && edit.v)
+    ? resolveHoles({ vnode: rawValue, props })
+    : rawValue;
+
+  // 3. Processa __million_exec (Recursivo) - Unifica 'execute' e 'bind'
+  while (value && typeof value === 'object' && value[EXEC_KEY]) {
+    try {
+      const fn = value.fn;
+      const args = value.args || [];
+      if (typeof fn === 'function') {
+        value = fn(...args);
+      } else {
+        value = null;
+        break;
+      }
+    } catch (err) {
+      console.error('Million Execute Error:', err);
+      value = null;
+      break;
+    }
+  }
+
+  return value;
+};
+
 export class Block extends AbstractBlock {
   declare r: HTMLElement;
   declare e: Edit[];
@@ -155,11 +189,7 @@ export class Block extends AbstractBlock {
         elements?.[i] ?? getCurrentElement(current.p!, root, this.c, i);
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
-        const rawValue = edit.h ? this.d![edit.h] : edit.v;
-
-        const value = (edit.h === null && edit.v)
-          ? resolveHoles(rawValue, this.d)
-          : rawValue;
+        const value = processValue(edit, this.d!);
 
         if (edit.t & ChildFlag) {
           if (value instanceof AbstractBlock) {
@@ -273,15 +303,9 @@ export class Block extends AbstractBlock {
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
 
-        const rawOldValue = edit.h ? props[edit.h] : edit.v;
-        const oldValue = (edit.h === null && edit.v)
-          ? resolveHoles(rawOldValue, props)
-          : rawOldValue;
+        const oldValue = processValue(edit, props)
+        const newValue = processValue(edit, newBlock.d!);
 
-        const rawNewValue = edit.h ? newBlock.d[edit.h] : edit.v;
-        const newValue = (edit.h === null && edit.v)
-          ? resolveHoles(rawNewValue, newBlock.d)
-          : rawNewValue;
         // ---------------------------------------------------
 
         if (newValue === oldValue) continue;
