@@ -143,8 +143,11 @@ export const renderToTemplate = (
           /* type */ t: AttributeFlag,
           /* name */ n: name,
           /* value */ v: value, // Passamos a estrutura inteira (com os holes dentro)
-          /* hole */ h: null,   // Sem chave única
-          /* index */ i: null, /* listener */ l: null, /* patch */ p: null, /* block */ b: null,
+          /* hole */ h: null as unknown as string,   // Sem chave única
+          /* index */ i: null, 
+          /* listener */ l: null, 
+          /* patch */ p: null, 
+          /* block */ b: null,
         });
         continue;
       }
