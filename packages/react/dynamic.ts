@@ -22,27 +22,33 @@ export const dynamic = <P>(node: P): P => {
 }
 
 export const resolveHoles = (vnode: any, currentProps: any): any => {
-  // 1. Se for nulo ou primitivo, retorna direto
   if (!vnode || typeof vnode !== 'object') return vnode;
 
-  // 2. Se for um Hole do Million ({ $: 'key' }), resolve o valor
   if ('$' in vnode) {
     return currentProps[vnode.$];
   }
 
-  // 3. Se for um Elemento React Válido, inspecionamos as props
+  if (Array.isArray(vnode)) {
+    let hasChanges = false;
+    const newArray = vnode.map((item) => {
+      const resolved = resolveHoles(item, currentProps);
+      if (resolved !== item) hasChanges = true;
+      return resolved;
+    });
+    return hasChanges ? newArray : vnode;
+  }
+
   if (isValidElement(vnode)) {
-    // @ts-ignore
-    const newProps = { ...vnode.props };
+    const newProps = { ...(vnode.props as any || {}) };
     let hasChanges = false;
 
     for (const key in newProps) {
-      const val = newProps[key];
+      const oldValue = newProps[key];
       
-      // Verifica se a PROP é um Hole
-      if (val && typeof val === 'object' && '$' in val) {
-        // @ts-ignore
-        newProps[key] = currentProps[val.$];
+      const newValue = resolveHoles(oldValue, currentProps);
+
+      if (oldValue !== newValue) {
+        newProps[key] = newValue;
         hasChanges = true;
       }
     }
@@ -50,6 +56,23 @@ export const resolveHoles = (vnode: any, currentProps: any): any => {
     if (hasChanges) {
       return cloneElement(vnode, newProps);
     }
+  }
+
+  if (vnode.constructor === Object) {
+    const newObj = { ...vnode };
+    let hasChanges = false;
+
+    for (const key in newObj) {
+      const oldValue = newObj[key];
+      const newValue = resolveHoles(oldValue, currentProps);
+
+      if (oldValue !== newValue) {
+        newObj[key] = newValue;
+        hasChanges = true;
+      }
+    }
+
+    return hasChanges ? newObj : vnode;
   }
 
   return vnode;
