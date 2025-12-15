@@ -30,7 +30,7 @@ import {
 } from './constants';
 import type { ArrayBlock } from './array';
 import type { EditChild, VElement, Hole, VNode, Edit } from './types';
-import { EXEC_KEY } from 'packages/million/constants';
+import { EXEC_KEY } from '../million/constants';
 
 const HOLE_PROXY = new Proxy(
   {},
