@@ -156,9 +156,9 @@ export class Block extends AbstractBlock {
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
         const rawValue = edit.h ? this.d![edit.h] : edit.v;
-        
-        const value = (edit.h === null && edit.v) 
-          ? resolveHoles(rawValue, this.d) 
+
+        const value = (edit.h === null && edit.v)
+          ? resolveHoles(rawValue, this.d)
           : rawValue;
 
         if (edit.t & ChildFlag) {
@@ -207,7 +207,12 @@ export class Block extends AbstractBlock {
           const patch = createEventListener(el, edit.n!, value);
           el[EVENT_PATCH + edit.n!] = patch;
         } else if (edit.t & AttributeFlag) {
-          setAttribute(el, edit.n!, value);
+          const name = edit.n!;
+          if (name.startsWith('data-') || name.startsWith('_')) {
+            el[name] = value;
+          } else {
+            setAttribute(el, name, value);
+          }
         } else if (edit.t & StyleAttributeFlag) {
           if (typeof value === 'string' || typeof value === 'number') {
             setStyleAttribute(el, edit.n!, value);
@@ -256,7 +261,7 @@ export class Block extends AbstractBlock {
     const root = this.l!;
     if (!newBlock.d) return root;
     const props = this.d!;
-    // If props are the same, no need to patch
+
     if (!shouldUpdate$.call(this, props, newBlock.d)) return root;
     this.d = newBlock.d;
 
@@ -264,10 +269,20 @@ export class Block extends AbstractBlock {
       const current = this.e[i]!;
       const el: HTMLElement =
         this.c![i] ?? getCurrentElement(current.p!, root, this.c, i);
+
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
-        const oldValue = props[edit.h];
-        const newValue = newBlock.d[edit.h];
+
+        const rawOldValue = edit.h ? props[edit.h] : edit.v;
+        const oldValue = (edit.h === null && edit.v)
+          ? resolveHoles(rawOldValue, props)
+          : rawOldValue;
+
+        const rawNewValue = edit.h ? newBlock.d[edit.h] : edit.v;
+        const newValue = (edit.h === null && edit.v)
+          ? resolveHoles(rawNewValue, newBlock.d)
+          : rawNewValue;
+        // ---------------------------------------------------
 
         if (newValue === oldValue) continue;
 
@@ -275,10 +290,9 @@ export class Block extends AbstractBlock {
           el[EVENT_PATCH + edit.n!]!(newValue);
           continue;
         }
+
         if (edit.t & ChildFlag) {
           if (oldValue instanceof AbstractBlock) {
-            // Remember! If we find a block inside a child, we need to locate
-            // the corresponding block in the new props and patch it.
             const firstEdit = newBlock.e?.[i]?.e[k] as EditChild;
             const newChildBlock = newBlock.d[firstEdit.h];
             oldValue.p(newChildBlock);
@@ -286,9 +300,9 @@ export class Block extends AbstractBlock {
           }
 
           if (newValue && typeof newValue === 'object' && 'foreign' in newValue) {
+            // Root Swap Logic
             if (this.r.nodeType === 8 && this.r.nodeValue === '$') {
               const newTargetEl = newValue.current;
-
               if (newValue.unstable && oldValue !== newValue) {
                 // @ts-ignore
                 replaceChild$.call(this.t(), newTargetEl, this.l);
@@ -310,11 +324,15 @@ export class Block extends AbstractBlock {
 
           setText(
             el[TEXT_NODE_CACHE][k],
-            // eslint-disable-next-line eqeqeq
             newValue == null || newValue === false ? '' : String(newValue),
           );
         } else if (edit.t & AttributeFlag) {
-          setAttribute(el, edit.n!, newValue);
+          const name = edit.n!;
+          if (name.startsWith('data-') || name.startsWith('_')) {
+            el[name] = newValue;
+          } else {
+            setAttribute(el, name, newValue);
+          }
         } else if (edit.t & StyleAttributeFlag) {
           if (typeof newValue === 'string' || typeof newValue === 'number') {
             setStyleAttribute(el, edit.n!, newValue);
@@ -330,7 +348,6 @@ export class Block extends AbstractBlock {
         }
       }
     }
-
     return root;
   }
   v(block: AbstractBlock | null = null, refNode: Node | null = null): void {
