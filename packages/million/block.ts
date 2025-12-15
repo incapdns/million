@@ -285,6 +285,7 @@ export class Block extends AbstractBlock {
               const newTargetEl = newValue.current;
 
               if (newValue.unstable && oldValue !== newValue) {
+                // @ts-ignore
                 replaceChild$.call(this.t(), newTargetEl, this.l);
                 this.l = newTargetEl;
               }
