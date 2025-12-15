@@ -112,7 +112,7 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
   let raw = vnode as any;
   if (raw && raw.__kind == DYNAMIC) {
     const key = `__int_dyn_${raw.__million_map.size}`;
-    raw.__million_map.set(key, vnode.node);
+    raw.__million_map.set(key, raw.node);
     return { $: key } as unknown as VNode;
   }
 
