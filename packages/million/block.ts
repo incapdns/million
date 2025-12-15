@@ -120,11 +120,32 @@ const processValue = (
     ? resolveHoles({ vnode: rawValue, props })
     : rawValue;
 
-  // 3. Processa __million_exec (Recursivo) - Unifica 'execute' e 'bind'
+  let depth = 0;
+  const MAX_DEPTH = 50;
+
   while (value && typeof value === 'object' && value[EXEC_KEY]) {
+    if (depth++ > MAX_DEPTH) {
+      break;
+    }
+
     try {
       const fn = value.fn;
-      const args = value.args || [];
+      let args = value.args || [];
+
+      if (args.some((arg: any) => arg && typeof arg === 'object' && arg[EXEC_KEY])) {
+        args = args.map((arg: any) => {
+          if (arg && typeof arg === 'object' && arg[EXEC_KEY]) {
+            try { 
+              return typeof arg.fn === 'function' ? arg.fn(...(arg.args || [])) : null 
+            }
+            catch { 
+              return null 
+            }
+          }
+          return arg;
+        });
+      }
+
       if (typeof fn === 'function') {
         value = fn(...args);
       } else {
@@ -132,7 +153,6 @@ const processValue = (
         break;
       }
     } catch (err) {
-      console.error('Million Execute Error:', err);
       value = null;
       break;
     }
