@@ -1,5 +1,6 @@
 /* eslint-disable no-bitwise */
 /* eslint-disable @typescript-eslint/unbound-method */
+import { resolveHoles } from '../react/dynamic';
 import type { MillionProps } from '../types';
 import {
   cloneNode$,
@@ -154,7 +155,11 @@ export class Block extends AbstractBlock {
         elements?.[i] ?? getCurrentElement(current.p!, root, this.c, i);
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
-        const value = this.d![edit.h];
+        const rawValue = edit.h ? this.d![edit.h] : edit.v;
+        
+        const value = (edit.h === null && edit.v) 
+          ? resolveHoles(rawValue, this.d) 
+          : rawValue;
 
         if (edit.t & ChildFlag) {
           if (value instanceof AbstractBlock) {

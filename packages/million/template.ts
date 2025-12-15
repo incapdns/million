@@ -71,7 +71,7 @@ export const renderToTemplate = (
     if (name.startsWith('on')) {
       const isValueHole = '$' in value;
       // Make edits monomorphic
-      if (isValueHole) {
+      if (isValueHole || (typeof value === 'object' && hasHole(value))) {
         current.e.push({
           /* type */ t: EventFlag,
           /* name */ n: name.slice(2),
@@ -137,6 +137,18 @@ export const renderToTemplate = (
 
         continue;
       }
+
+      if (typeof value === 'object' && hasHole(value)) {
+        current.e.push({
+          /* type */ t: AttributeFlag,
+          /* name */ n: name,
+          /* value */ v: value, // Passamos a estrutura inteira (com os holes dentro)
+          /* hole */ h: null,   // Sem chave única
+          /* index */ i: null, /* listener */ l: null, /* patch */ p: null, /* block */ b: null,
+        });
+        continue;
+      }
+
       if (name === 'style' && typeof value === 'object') {
         let style = '';
         for (const key in value) {
@@ -256,3 +268,10 @@ export const renderToTemplate = (
 
   return `<${vnode.type}${props}>${children}</${vnode.type}>`;
 };
+
+const hasHole = (value: any): boolean => {
+  if (!value || typeof value !== 'object') return false;
+  if ('$' in value) return true;
+  if (Array.isArray(value)) return value.some(hasHole);
+  return Object.values(value).some(hasHole);
+}
