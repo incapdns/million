@@ -144,7 +144,7 @@ export class Block extends AbstractBlock {
   ): HTMLElement {
     if (this.l) return this.l;
     // cloneNode(true) uses less memory than recursively creating new nodes
-    const root = hydrateNode ?? (cloneNode$.call(this.r, true) as HTMLElement);
+    let root = hydrateNode ?? (cloneNode$.call(this.r, true) as HTMLElement);
     const elements = this.g?.(root);
     if (elements) this.c = elements;
 
@@ -169,12 +169,18 @@ export class Block extends AbstractBlock {
           if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
 
           if (value && typeof value === 'object' && 'foreign' in value) {
+            const targetEl = value.current;
+
+            if (el === root && root.nodeType === 8 && root.nodeValue === '$') {
+              root = targetEl;
+              continue;
+            }
+
             if (hydrateNode) {
               const child = childAt(el, edit.i!);
               value.reset(child);
             }
 
-            const targetEl = value.current;
             el[TEXT_NODE_CACHE][k] = targetEl;
             if (!hydrateNode) {
               insertBefore$.call(el, targetEl, childAt(el, edit.i!));
@@ -273,11 +279,18 @@ export class Block extends AbstractBlock {
             oldValue.p(newChildBlock);
             continue;
           }
-          if (
-            newValue &&
-            typeof newValue === 'object' &&
-            'foreign' in newValue
-          ) {
+
+          if (newValue && typeof newValue === 'object' && 'foreign' in newValue) {
+            if (this.r.nodeType === 8 && this.r.nodeValue === '$') {
+              const newTargetEl = newValue.current;
+
+              if (newValue.unstable && oldValue !== newValue) {
+                replaceChild$.call(this.t(), newTargetEl, this.l);
+                this.l = newTargetEl;
+              }
+              continue;
+            }
+
             const targetEl = el[TEXT_NODE_CACHE][k];
             if (newValue.unstable && oldValue !== newValue) {
               const newTargetEl = newValue.current;
@@ -286,9 +299,9 @@ export class Block extends AbstractBlock {
             } else {
               newValue.current = targetEl;
             }
-
             continue;
           }
+
           setText(
             el[TEXT_NODE_CACHE][k],
             // eslint-disable-next-line eqeqeq
