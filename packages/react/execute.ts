@@ -1,4 +1,4 @@
-import { EXEC_KEY } from 'packages/million/constants';
+import { EXEC_KEY } from '../million/constants';
 
 export const execute = (fn: any, ...args: any[]) => {
   return {
