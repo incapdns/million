@@ -1,4 +1,5 @@
 import { isValidElement, cloneElement } from 'react';
+import { createPortal } from 'react-dom';
 
 // dynamic.ts
 export const DYNAMIC = Symbol("million_dynamic");
@@ -6,18 +7,32 @@ export const DYNAMIC = Symbol("million_dynamic");
 export const currentFn: { context: any } = { context: null };
 
 export const dynamic = <P>(node: P): P => {
-  if (!currentFn.context) {
+  const ctx = currentFn.context;
+
+  if (!ctx) {
     throw new Error("dynamic() must be called inside a block()");
   }
 
-  if (!currentFn.context.__million_map) {
-    currentFn.context.__million_map = new Map();
+  if (ctx.block && ctx.el) {
+    const portal = createPortal(node, ctx.el);
+
+    if (ctx.block.v) {
+      ctx.block.v.push(portal);
+    }
+
+    return { kind: DYNAMIC } as any;
   }
 
-  return { 
-    __kind: DYNAMIC, 
-    node, 
-    __million_map: currentFn.context.__million_map
+  if (!currentFn.context.million_map) {
+    currentFn.context.million_map = new Map();
+    currentFn.context.rt_million_vec = [];
+  }
+
+  return {
+    kind: DYNAMIC,
+    node,
+    million_map: currentFn.context.million_map,
+    rt_million_vec: currentFn.context.rt_million_vec
   } as any;
 }
 
@@ -44,7 +59,7 @@ export const resolveHoles = ({ vnode, props }: any): any => {
 
     for (const key in newProps) {
       const oldValue = newProps[key];
-      
+
       const newValue = resolveHoles({ vnode: oldValue, props });
 
       if (oldValue !== newValue) {

@@ -11,10 +11,11 @@ import type { MillionPortal, MillionProps, Options } from '../types';
 // eslint-disable-next-line camelcase
 import { experimental_options } from '../experimental';
 import { cloneNode$ } from '../million/dom';
-import { Effect, REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE } from './constants';
+import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, SynchronousEffect } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
 import { currentFn, resolveHoles } from './dynamic';
+import { RenderPortals } from './portals';
 
 export const block = <P extends MillionProps>(
   fn: ComponentType<P> | null,
@@ -49,13 +50,16 @@ export const block = <P extends MillionProps>(
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
 
+    const rtPortals = useRef<any[]>([]);
+    rtPortals.current = [];
+
     const raw = fn as any;
 
-    if(raw.__million_map != undefined) {
+    if(raw.million_map != undefined) {
       // @ts-ignore
       props = { ...props };
 
-      raw.__million_map.forEach((node, key) => {
+      raw.million_map.forEach((node, key) => {
         // @ts-ignore
         props[key] = resolveHoles({ vnode: node, props });
       });
@@ -68,6 +72,7 @@ export const block = <P extends MillionProps>(
     const effect = useCallback(() => {
       if (!ref.current && !noSlot) return;
       const currentBlock = blockTarget!(props, props.key);
+      currentBlock.rtPortals = rtPortals.current;
       if (hmrTimestamp && ref.current?.textContent) {
         ref.current.textContent = '';
       }
@@ -129,11 +134,14 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
       Fragment,
       {},
       marker,
-      createElement(Effect, {
+      createElement(SynchronousEffect, {
         effect,
         deps: hmrTimestamp ? [hmrTimestamp] : [],
       }),
       children,
+      createElement(RenderPortals, {
+        portals: raw.rt_million_vec
+      })
     );
 
     return vnode;

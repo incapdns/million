@@ -159,5 +159,5 @@ export interface Edit {
     | EditChild
     | EditEvent
   )[];
-  /* inits */ i: (InitChild | InitEvent | InitBlock)[] | null;
+  /* inits   */ i: (InitChild | InitEvent | InitBlock)[] | null;
 }

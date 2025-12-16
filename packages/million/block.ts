@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 /* eslint-disable @typescript-eslint/unbound-method */
-import { resolveHoles } from '../react/dynamic';
+import { currentFn, DYNAMIC, resolveHoles } from '../react/dynamic';
 import type { MillionProps } from '../types';
 import {
   cloneNode$,
@@ -135,11 +135,11 @@ const processValue = (
       if (args.some((arg: any) => arg && typeof arg === 'object' && arg[EXEC_KEY])) {
         args = args.map((arg: any) => {
           if (arg && typeof arg === 'object' && arg[EXEC_KEY]) {
-            try { 
-              return typeof arg.fn === 'function' ? arg.fn(...(arg.args || [])) : null 
+            try {
+              return typeof arg.fn === 'function' ? arg.fn(...(arg.args || [])) : null
             }
-            catch { 
-              return null 
+            catch {
+              return null
             }
           }
           return arg;
@@ -164,6 +164,9 @@ const processValue = (
 export class Block extends AbstractBlock {
   declare r: HTMLElement;
   declare e: Edit[];
+
+  public rtPortals: any[] | null = null;
+  public _v: any[] = [];
 
   constructor(
     root: HTMLElement,
@@ -209,7 +212,20 @@ export class Block extends AbstractBlock {
         elements?.[i] ?? getCurrentElement(current.p!, root, this.c, i);
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
+
+        const prevContext = currentFn.context;
+        currentFn.context = {
+          block: this,
+          el
+        };
         const value = processValue(edit, this.d!);
+        currentFn.context = prevContext;
+
+        this._v.push(value);
+
+        if (value.kind == DYNAMIC) {
+          continue;
+        }
 
         if (edit.t & ChildFlag) {
           if (value instanceof AbstractBlock) {
@@ -315,6 +331,8 @@ export class Block extends AbstractBlock {
     if (!shouldUpdate$.call(this, props, newBlock.d)) return root;
     this.d = newBlock.d;
 
+    let cursor = 0;
+
     for (let i = 0, j = this.e.length; i < j; ++i) {
       const current = this.e[i]!;
       const el: HTMLElement =
@@ -323,12 +341,35 @@ export class Block extends AbstractBlock {
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
 
-        const oldValue = processValue(edit, props)
+        const rawOld = edit.h ? props[edit.h] : edit.v;
+        const rawNew = edit.h ? newBlock.d[edit.h] : edit.v;
+        if (rawOld === rawNew) {
+          cursor++;
+          continue;
+        }
+
+        const oldValue = this._v[cursor];
+
+        const prevContext = currentFn.context;
+        currentFn.context = { block: this, el };
+
         const newValue = processValue(edit, newBlock.d!);
 
-        // ---------------------------------------------------
+        currentFn.context = prevContext;
 
-        if (newValue === oldValue) continue;
+        this._v[cursor] = newValue;
+        cursor++;
+
+        const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === DYNAMIC;
+
+        if (newValue === oldValue || isNewDynamic) {
+          if (isNewDynamic && (edit.t & ChildFlag)) {
+            if (el[TEXT_NODE_CACHE] && el[TEXT_NODE_CACHE][k]) {
+              setText(el[TEXT_NODE_CACHE][k], '');
+            }
+          }
+          continue;
+        }
 
         if (edit.t & EventFlag) {
           el[EVENT_PATCH + edit.n!]!(newValue);
