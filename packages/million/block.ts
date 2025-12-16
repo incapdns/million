@@ -138,12 +138,60 @@ const getProp = (props: MillionProps, key: string): any => {
 };
 
 type ArrayType<T> = T extends Array<infer U> ? U : T;
+// 1. Helper para resolver argumentos recursivamente
+const resolveRecursiveArgs = (args: any[], props: MillionProps): any[] => {
+  return args.map((arg) => {
+    // Caso Base 1: Primitivos ou null/undefined
+    if (!arg || typeof arg !== 'object') return arg;
 
+    // Caso 2: Hole ($) - A "FASE 1"
+    // Resolvemos o valor real buscando nas props
+    if ('$' in arg) {
+      return getProp(props, arg.$);
+    }
+
+    // Caso 3: Nested Execute (EXEC_KEY) - A "Recursão"
+    // Se um argumento for outra função execute(...)
+    if (arg[EXEC_KEY]) {
+      try {
+        const fn = arg.fn;
+
+        // RECURSÃO: Resolvemos os argumentos DESTE filho antes de executá-lo
+        // Isso garante que se o filho tiver um Hole nos args, ele será resolvido.
+        const childArgs = resolveRecursiveArgs(arg.args || [], props);
+
+        if (typeof fn === 'function') {
+          // 1. Executa a função filha com argumentos limpos
+          let result = fn(...childArgs);
+
+          // 2. Aplica Deep Access (arg.k) se houver (ex: execute(inner).price)
+          if (arg.k && arg.k.length > 0) {
+            for (const key of arg.k) {
+              result = result?.[key];
+            }
+          }
+          return result;
+        }
+        return null;
+      } catch (err) {
+        // Se a função filha falhar, retornamos null para não quebrar o pai
+        return null;
+      }
+    }
+
+    // Caso 4: Objeto comum (não é Hole nem Execute)
+    return arg;
+  });
+};
+
+// 2. O processValue limpo e poderoso
 const processValue = (
   edit: ArrayType<Edit['e']>,
   props: MillionProps
 ): any => {
-  const rawValue = edit.h ? getProp(props, edit.h) : edit.v;
+  const rawValue = (edit.h && typeof edit.h === 'string')
+    ? getProp(props, edit.h)
+    : (edit.h || edit.v);
 
   let value = (edit.h === null && edit.v)
     ? resolveHoles({ vnode: rawValue, props })
@@ -157,34 +205,13 @@ const processValue = (
 
     try {
       const fn = value.fn;
-      let args = value.args || [];
       const keys = value.k;
+      const rawArgs = value.args || [];
 
-      if (args.some((arg: any) => arg && typeof arg === 'object' && arg[EXEC_KEY])) {
-        args = args.map((arg: any) => {
-          if (arg && typeof arg === 'object' && arg[EXEC_KEY]) {
-            try {
-              if (typeof arg.fn === 'function') {
-                let result = arg.fn(...(arg.args || []));
-
-                if (arg.k && arg.k.length > 0) {
-                  for (const key of arg.k) {
-                    result = result?.[key];
-                  }
-                }
-                return result;
-              }
-              return null;
-            } catch {
-              return null;
-            }
-          }
-          return arg;
-        });
-      }
+      const resolvedArgs = resolveRecursiveArgs(rawArgs, props);
 
       if (typeof fn === 'function') {
-        let result = fn(...args);
+        let result = fn(...resolvedArgs);
 
         if (keys && keys.length > 0) {
           for (const key of keys) {
@@ -198,6 +225,7 @@ const processValue = (
         break;
       }
     } catch (err) {
+      console.error('Million processValue error:', err);
       value = null;
       break;
     }
