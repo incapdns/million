@@ -223,7 +223,7 @@ export class Block extends AbstractBlock {
 
         this._v.push(value);
 
-        if (value.kind == DYNAMIC) {
+        if (value && value.kind == DYNAMIC) {
           continue;
         }
 
