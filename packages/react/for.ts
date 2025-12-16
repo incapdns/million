@@ -94,6 +94,7 @@ const createChildren = <T>(
 ): Block[] => {
   const children = Array(each.length);
   const currentCache = cache.current as any;
+
   for (let i = 0, l = each.length; i < l; ++i) {
     if (memo && currentCache.each && currentCache.each[i] === each[i]) {
       children[i] = currentCache.children?.[i];
@@ -105,7 +106,7 @@ const createChildren = <T>(
       if (!currentCache.block) {
         currentCache.block = MapGet$.call(REGISTRY, vnode.type)!;
       }
-      children[i] = currentCache.block!(vnode.props, portals, i);
+      children[i] = currentCache.block!(vnode.props, portals, i, vnode.key);
       continue;
     }
 
@@ -121,10 +122,12 @@ const createChildren = <T>(
     }
 
     const block = createBlock((props?: MillionProps) => props?.scope);
+
     const currentBlock = (
       props: MillionProps,
       portals: { current: MillionPortal[] },
       index: number,
+      key?: string | number | null // <--- Argumento Dinâmico
     ): ReturnType<typeof block> => {
       return block(
         {
@@ -135,14 +138,17 @@ const createChildren = <T>(
             index,
           ),
         },
-        vnode.key ? String(vnode.key) : undefined,
+
+        key ? String(key) : (vnode.key ? String(vnode.key) : undefined),
       );
     };
 
     MapSet$.call(REGISTRY, vnode.type, currentBlock);
     currentCache.block = currentBlock as any;
-    children[i] = currentBlock(vnode.props, portals, i);
+
+    children[i] = currentBlock(vnode.props, portals, i, vnode.key);
   }
+
   currentCache.each = each;
   currentCache.children = children;
   return children;
