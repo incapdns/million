@@ -32,6 +32,11 @@ const MillionArray = <T>({
   const [portals] = useState<{ current: MillionPortal[] }>(() => ({
     current: Array(each.length),
   }));
+
+  if (portals.current.length !== each.length) {
+    portals.current.length = each.length;
+  }
+
   const fragmentRef = useRef<ReturnType<typeof mapArray> | null>(null);
   const cache = useRef<ArrayCache<T>>({
     each: null,
