@@ -18,7 +18,7 @@ export const dynamic = <P>(node: P): P => {
     const portal = createPortal(node, ctx.getSlot());
 
     if (ctx.block.rtPortals) {
-      ctx.block.v.push(portal);
+      ctx.block.rtPortals.push(portal);
     }
 
     return { kind: DYNAMIC } as any;
