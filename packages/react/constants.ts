@@ -13,17 +13,6 @@ function sameArray(a: DependencyList, b: DependencyList) {
   return true;
 }
 
-export const Effect = ({
-  effect,
-  deps,
-}: {
-  effect: () => void;
-  deps?: DependencyList;
-}): null => {
-  useEffect(effect, deps || []);
-  return null;
-};
-
 export const SynchronousEffect = ({
   effect,
   deps,

@@ -10,10 +10,8 @@ import { MapHas$, MapSet$ } from '../million/constants';
 import type { MillionPortal, MillionProps, Options } from '../types';
 // eslint-disable-next-line camelcase
 import { experimental_options } from '../experimental';
-import { cloneNode$ } from '../million/dom';
 import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, SynchronousEffect } from './constants';
 import { processProps, unwrap } from './utils';
-import { useContainer, useNearestParent } from './its-fine';
 import { currentFn, resolveHoles } from './dynamic';
 import { RenderPortals } from './portals';
 
@@ -43,8 +41,6 @@ export const block = <P extends MillionProps>(
     props: P,
     forwardedRef: Ref<any>,
   ) => {
-    const container = useContainer<HTMLElement>(); // usable when there's no parent other than the root element
-    const parentRef = useNearestParent<HTMLElement>();
     const hmrTimestamp = props._hmr;
     const ref = useRef<HTMLElement | null>(null);
     const patch = useRef<((props: P) => void) | null>(null);

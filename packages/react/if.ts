@@ -5,14 +5,18 @@ import { execute } from './execute';
 import { AbstractBlock } from '../million/types';
 
 export interface IfProps {
-  condition: boolean;
+  condition: boolean | (() => boolean);
   then?: ReactNode | (() => ReactNode);
   else?: ReactNode | (() => ReactNode);
   children?: ReactNode;
 }
 
-const smartChoose = (condition: boolean, then: any, elseProp: any) => {
-  const target = condition ? then : elseProp;
+const smartChoose = (condition: boolean | (() => boolean), then: any, elseProp: any) => {
+  const result = typeof condition === 'function' 
+    ? condition()
+    : condition;
+    
+  const target = result ? then : elseProp;
 
   const value = (typeof target === 'function')
     ? target()

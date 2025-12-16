@@ -32,14 +32,32 @@ import type { ArrayBlock } from './array';
 import type { EditChild, VElement, Hole, VNode, Edit } from './types';
 import { EXEC_KEY } from '../million/constants';
 
+export let CURRENT_RUNTIME_PROPS: any = null;
+
+const getByPath = (obj: any, path: string) => {
+  if (!obj) return undefined;
+  const keys = path.split('.');
+  let result = obj;
+  for (const key of keys) {
+    if (result === null || result === undefined) return undefined;
+    result = result[key];
+  }
+  return result;
+};
+
 const createDeepHole = (key: string): any => {
   const hole = { $: key };
 
   return new Proxy(hole, {
     get(target, prop: string) {
+      if (CURRENT_RUNTIME_PROPS !== null) {
+        const fullPath = `${key}.${prop}`;
+        return getByPath(CURRENT_RUNTIME_PROPS, fullPath);
+      }
+
       if (prop === '$') return target.$;
 
-      if (typeof prop != 'string') return undefined
+      if (typeof prop !== 'string') return undefined;
 
       return createDeepHole(`${key}.${prop}`);
     },
@@ -49,7 +67,10 @@ const createDeepHole = (key: string): any => {
 const HOLE_PROXY = new Proxy(
   {},
   {
-    get(_, key: string): Hole {
+    get(_, key: string): any {
+      if (CURRENT_RUNTIME_PROPS !== null)
+        return CURRENT_RUNTIME_PROPS[key];
+
       return createDeepHole(key);
     },
   },
@@ -138,33 +159,32 @@ const getProp = (props: MillionProps, key: string): any => {
 };
 
 type ArrayType<T> = T extends Array<infer U> ? U : T;
-// 1. Helper para resolver argumentos recursivamente
-const resolveRecursiveArgs = (args: any[], props: MillionProps): any[] => {
+
+const resolveArgs = (args: any[], props: MillionProps): any[] => {
   return args.map((arg) => {
-    // Caso Base 1: Primitivos ou null/undefined
     if (!arg || typeof arg !== 'object') return arg;
 
-    // Caso 2: Hole ($) - A "FASE 1"
-    // Resolvemos o valor real buscando nas props
     if ('$' in arg) {
       return getProp(props, arg.$);
     }
 
-    // Caso 3: Nested Execute (EXEC_KEY) - A "Recursão"
-    // Se um argumento for outra função execute(...)
     if (arg[EXEC_KEY]) {
       try {
         const fn = arg.fn;
 
-        // RECURSÃO: Resolvemos os argumentos DESTE filho antes de executá-lo
-        // Isso garante que se o filho tiver um Hole nos args, ele será resolvido.
-        const childArgs = resolveRecursiveArgs(arg.args || [], props);
+        const childArgs = resolveArgs(arg.args || [], props);
 
         if (typeof fn === 'function') {
-          // 1. Executa a função filha com argumentos limpos
-          let result = fn(...childArgs);
+          const prevProps = CURRENT_RUNTIME_PROPS;
+          CURRENT_RUNTIME_PROPS = props;
 
-          // 2. Aplica Deep Access (arg.k) se houver (ex: execute(inner).price)
+          let result;
+          try {
+            result = fn(...childArgs);
+          } finally {
+            CURRENT_RUNTIME_PROPS = prevProps;
+          }
+
           if (arg.k && arg.k.length > 0) {
             for (const key of arg.k) {
               result = result?.[key];
@@ -174,17 +194,14 @@ const resolveRecursiveArgs = (args: any[], props: MillionProps): any[] => {
         }
         return null;
       } catch (err) {
-        // Se a função filha falhar, retornamos null para não quebrar o pai
         return null;
       }
     }
 
-    // Caso 4: Objeto comum (não é Hole nem Execute)
     return arg;
   });
 };
 
-// 2. O processValue limpo e poderoso
 const processValue = (
   edit: ArrayType<Edit['e']>,
   props: MillionProps
@@ -208,10 +225,18 @@ const processValue = (
       const keys = value.k;
       const rawArgs = value.args || [];
 
-      const resolvedArgs = resolveRecursiveArgs(rawArgs, props);
+      const resolvedArgs = resolveArgs(rawArgs, props);
 
       if (typeof fn === 'function') {
-        let result = fn(...resolvedArgs);
+        const prevProps = CURRENT_RUNTIME_PROPS;
+        CURRENT_RUNTIME_PROPS = props;
+
+        let result;
+        try {
+          result = fn(...resolvedArgs);
+        } finally {
+          CURRENT_RUNTIME_PROPS = prevProps;
+        }
 
         if (keys && keys.length > 0) {
           for (const key of keys) {
@@ -229,6 +254,21 @@ const processValue = (
       value = null;
       break;
     }
+  }
+
+  if ((edit.t & EventFlag) && typeof value === 'function') {
+    const originalHandler = value;
+    
+    value = function (...args: any[]) {
+      const prevProps = CURRENT_RUNTIME_PROPS;
+      CURRENT_RUNTIME_PROPS = props; 
+      
+      try {
+        return originalHandler.apply(this, args);
+      } finally {
+        CURRENT_RUNTIME_PROPS = prevProps;
+      }
+    };
   }
 
   return value;
