@@ -32,6 +32,7 @@ export const SynchronousEffect = ({
   deps?: DependencyList;
 }): null => {
   const depsRef = useRef<DependencyList>([] as DependencyList);
+  // @ts-ignore
   if(!sameArray(depsRef.current, deps)){
     effect();
   }
