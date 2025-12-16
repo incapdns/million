@@ -36,6 +36,7 @@ export const SynchronousEffect = ({
   if(!sameArray(depsRef.current, deps)){
     effect();
   }
+  // @ts-ignore
   depsRef.current = deps;
   return null;
 };
