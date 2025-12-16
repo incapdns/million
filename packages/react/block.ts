@@ -1,4 +1,4 @@
-import { createElement, Fragment, useCallback, useMemo, useRef, useState } from 'react';
+import { createElement, Fragment, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import type { ComponentType, Ref } from 'react';
 import {
   block as createBlock,
@@ -11,7 +11,7 @@ import type { MillionPortal, MillionProps, Options } from '../types';
 // eslint-disable-next-line camelcase
 import { experimental_options } from '../experimental';
 import { cloneNode$ } from '../million/dom';
-import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, Effect } from './constants';
+import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, SynchronousEffect } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
 import { currentFn, resolveHoles } from './dynamic';
@@ -39,8 +39,6 @@ export const block = <P extends MillionProps>(
     currentFn.context = undefined;
   }
 
-  let count = 0;
-
   const MillionBlock = <P extends MillionProps>(
     props: P,
     forwardedRef: Ref<any>,
@@ -51,7 +49,7 @@ export const block = <P extends MillionProps>(
     const ref = useRef<HTMLElement | null>(null);
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
-    const [firstRtPortals, setFirstRtPortals] = useState<any>();
+    const tempContainer = useMemo(() => document.createElement('million-temp'), []);
     const blockInstance = useRef<any>(null);
 
     const rtPortals = useRef<any[]>([]);
@@ -76,57 +74,39 @@ export const block = <P extends MillionProps>(
       patch.current(props);
     }
 
-    const effect = useCallback(() => {
-      if (!ref.current && !noSlot) return;
+    const runMount = useCallback(() => {
+      if (patch.current) return;
+
+      const targetRoot = ref.current || tempContainer;
+
       const currentBlock = blockTarget!(props, props.key);
       blockInstance.current = currentBlock;
+
       currentBlock.rtPortals = rtPortals.current;
-      if (hmrTimestamp && ref.current?.textContent) {
-        ref.current.textContent = '';
-      }
-      if (noSlot) {
-        ref.current = (parentRef.current?.el ?? container.current?.el)!;
-        // the parentRef depth is only bigger than container depth when we're in a portal, where the portal el is closer than the jsx parent
-        if (
-          props.scoped ||
-          (parentRef.current &&
-            container.current &&
-            parentRef.current.depth > container.current.depth)
-        ) {
-          // in portals, parentRef is not the proper parent
-          ref.current = container.current!.el!;
-        }
-        if (ref.current.childNodes.length) {
-          // eslint-disable-next-line no-console
-          console.error(
-            new Error(`\`experimental_options.noSlot\` does not support having siblings at the moment.
-The block element should be the only child of the \`${(cloneNode$.call(ref.current) as HTMLElement).outerHTML
-              }\` element.
-To avoid this error, \`experimental_options.noSlot\` should be false`),
-          );
+
+      mount$.call(currentBlock, targetRoot, null);
+
+      patch.current = (props: P) => {
+        patchBlock(
+          currentBlock,
+          blockTarget!(
+            props,
+            props.key,
+            options?.shouldUpdate as Parameters<typeof createBlock>[2]
+          )
+        );
+      };
+    }, []);
+
+    useLayoutEffect(() => {
+      if (tempContainer.hasChildNodes() && ref.current) {
+        while (tempContainer.firstChild) {
+          ref.current.appendChild(tempContainer.firstChild);
         }
       }
-      if (patch.current === null || hmrTimestamp) {
-        mount$.call(currentBlock, ref.current!, null);
-        patch.current = (props: P) => {
-          patchBlock(
-            currentBlock,
-            blockTarget!(
-              props,
-              props.key,
-              options?.shouldUpdate as Parameters<typeof createBlock>[2],
-            ),
-          );
-        };
-        // mount?.(true)
 
-        count++;
-
-        if(currentBlock.rtPortals.length > 0)
-          setFirstRtPortals(currentBlock.rtPortals)
-      }
       return () => {
-        removeBlock.call(currentBlock);
+        if (blockInstance.current) removeBlock.call(blockInstance.current);
       };
     }, []);
 
@@ -147,15 +127,13 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
       Fragment,
       {},
       marker,
-      createElement(Effect, {
-        effect,
+      createElement(SynchronousEffect, {
+        effect: runMount,
         deps: hmrTimestamp ? [hmrTimestamp] : [],
       }),
       children,
       createElement(RenderPortals, {
-        portals: rtPortals.current,
-        count: count++,
-        firstRtPortals
+        portals: rtPortals.current
       })
     );
 
