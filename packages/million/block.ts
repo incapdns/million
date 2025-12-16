@@ -361,7 +361,10 @@ export class Block extends AbstractBlock {
 
         const rawOld = edit.h ? props[edit.h] : edit.v;
         const rawNew = edit.h ? newBlock.d[edit.h] : edit.v;
-        if (rawOld === rawNew) {
+
+        const isExecute = rawNew && typeof rawNew === 'object' && rawNew[EXEC_KEY];
+
+        if (rawOld === rawNew && !isExecute) {
           cursor++;
           continue;
         }
@@ -391,9 +394,9 @@ export class Block extends AbstractBlock {
           return wrapper;
         };
 
-        currentFn.context = { 
-          block: this, 
-          getSlot 
+        currentFn.context = {
+          block: this,
+          getSlot
         };
         const newValue = processValue(edit, newBlock.d!);
         currentFn.context = prevContext;
