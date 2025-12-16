@@ -34,7 +34,9 @@ const MillionArray = <T>({
   }));
 
   if (portals.current.length !== each.length) {
-    portals.current.length = each.length;
+    const newPortals = new Array(each.length);
+    portals.current = newPortals;
+    portals.current.length = each.length
   }
 
   const fragmentRef = useRef<ReturnType<typeof mapArray> | null>(null);
@@ -46,10 +48,10 @@ const MillionArray = <T>({
   const [, setMountPortals] = useState(false);
 
   if (fragmentRef.current && (each !== cache.current.each || !memo)) {
-    // queueMicrotask$(() => {
     const newChildren = createChildren<T>(each, children, cache, portals, memo);
-    arrayPatch$.call(fragmentRef.current, mapArray(newChildren));
-    // });
+    const newVNode = mapArray(newChildren);
+    arrayPatch$.call(fragmentRef.current, newVNode);
+    fragmentRef.current = newVNode;
   }
 
   const defaultType = svg ? SVG_RENDER_SCOPE : RENDER_SCOPE;
@@ -57,14 +59,11 @@ const MillionArray = <T>({
     Fragment,
     null,
     createElement(as ?? defaultType, { ...rest, ref }),
-    ...portals.current.map((p) => p.portal),
+    ...portals.current.map((p) => p?.portal),
   );
-  // console.log(portals.current, ref.current)
 
   useEffect(() => {
     if (!ref.current || fragmentRef.current) return;
-
-    // queueMicrotask$(() => {
     if (cache.current.mounted) return;
 
     const newChildren = createChildren<T>(each, children, cache, portals, memo);
@@ -75,7 +74,6 @@ const MillionArray = <T>({
     arrayMount$.call(fragmentRef.current, ref.current);
     cache.current.mounted = true;
     setMountPortals(true);
-    // });
   }, [ref.current]);
 
   return MillionFor;
