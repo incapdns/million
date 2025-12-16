@@ -1,6 +1,11 @@
 import React from 'react';
 
-export const RenderPortals = ({ portals }: { portals: any[] }) => {
-  // Retorna os elementos React que foram empurrados no array
-  return <>{portals}</>; 
+export const RenderPortals = ({ portals, count, firstRtPortals }: { portals: any[]; count: number; firstRtPortals: any[] }) => {
+  const content = portals.length > 0 ?
+    portals : 
+    count == 1 ? 
+      firstRtPortals :
+      portals;
+
+  return <>{content}</>; 
 };

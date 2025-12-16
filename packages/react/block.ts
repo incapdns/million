@@ -1,4 +1,4 @@
-import { createElement, Fragment, useCallback, useMemo, useRef, JSX } from 'react';
+import { createElement, Fragment, useCallback, useMemo, useRef, useState } from 'react';
 import type { ComponentType, Ref } from 'react';
 import {
   block as createBlock,
@@ -39,6 +39,8 @@ export const block = <P extends MillionProps>(
     currentFn.context = undefined;
   }
 
+  let count = 0;
+
   const MillionBlock = <P extends MillionProps>(
     props: P,
     forwardedRef: Ref<any>,
@@ -49,7 +51,7 @@ export const block = <P extends MillionProps>(
     const ref = useRef<HTMLElement | null>(null);
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
-
+    const [firstRtPortals, setFirstRtPortals] = useState<any>();
     const blockInstance = useRef<any>(null);
 
     const rtPortals = useRef<any[]>([]);
@@ -117,6 +119,11 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
           );
         };
         // mount?.(true)
+
+        count++;
+
+        if(currentBlock.rtPortals.length > 0)
+          setFirstRtPortals(currentBlock.rtPortals)
       }
       return () => {
         removeBlock.call(currentBlock);
@@ -146,7 +153,9 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
       }),
       children,
       createElement(RenderPortals, {
-        portals: rtPortals.current
+        portals: rtPortals.current,
+        count: count++,
+        firstRtPortals
       })
     );
 
