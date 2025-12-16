@@ -110,7 +110,7 @@ export const renderReactScope = (
 
 export const unwrap = (vnode: JSX.Element | null): VNode => {
   let raw = vnode as any;
-  if (raw && raw.kind == DYNAMIC) {
+  if (raw && raw.kind === DYNAMIC) {
     const key = `__int_dyn_${raw.million_map.size}`;
     raw.million_map.set(key, raw.node);
     return { $: key } as unknown as VNode;
