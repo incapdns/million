@@ -6,8 +6,8 @@ import { AbstractBlock } from '../million/types';
 
 export interface IfProps {
   condition: boolean;
-  then?: ReactNode;
-  else?: ReactNode;
+  then?: ReactNode | (() => ReactNode);
+  else?: ReactNode | (() => ReactNode);
   children?: ReactNode;
 }
 
