@@ -120,13 +120,29 @@ export const patch = (
   return el;
 };
 
+const getProp = (props: MillionProps, key: string): any => {
+  if (!key.includes('.')) {
+    return props[key];
+  }
+
+  const path = key.split('.');
+  let current = props;
+
+  for (let i = 0; i < path.length; i++) {
+    if (!current) return undefined;
+    current = current[path[i]];
+  }
+
+  return current;
+};
+
 type ArrayType<T> = T extends Array<infer U> ? U : T;
 
 const processValue = (
   edit: ArrayType<Edit['e']>,
   props: MillionProps
 ): any => {
-  const rawValue = edit.h ? props[edit.h] : edit.v;
+  const rawValue = edit.h ? getProp(props, edit.h) : edit.v;
 
   let value = (edit.h === null && edit.v)
     ? resolveHoles({ vnode: rawValue, props })
