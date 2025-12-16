@@ -9,6 +9,7 @@ import {
   ChildFlag,
   BlockFlag,
   SetHas$,
+  EXEC_KEY,
 } from './constants';
 import { AbstractBlock } from './types';
 import type { Edit, VNode } from './types';
@@ -37,6 +38,27 @@ export const renderToTemplate = (
           /* name */ n: null,
           /* value */ v: null,
           /* hole */ h: vnode.$ as string,
+          /* index */ i: 0,
+          /* listener */ l: null,
+          /* patch */ p: null,
+          /* block */ b: null,
+        },
+      ],
+      i: [],
+    });
+
+    return '<!--$-->';
+  }
+
+  if (typeof vnode === 'object' && vnode[EXEC_KEY]) {
+    edits.push({
+      p: path,
+      e: [
+        {
+          /* type */ t: ChildFlag,
+          /* name */ n: null,
+          /* value */ v: vnode as any,
+          /* hole */ h: null,
           /* index */ i: 0,
           /* listener */ l: null,
           /* patch */ p: null,
@@ -144,9 +166,9 @@ export const renderToTemplate = (
           /* name */ n: name,
           /* value */ v: value, // Passamos a estrutura inteira (com os holes dentro)
           /* hole */ h: null as unknown as string,   // Sem chave única
-          /* index */ i: null, 
-          /* listener */ l: null, 
-          /* patch */ p: null, 
+          /* index */ i: null,
+          /* listener */ l: null,
+          /* patch */ p: null,
           /* block */ b: null,
         });
         continue;
