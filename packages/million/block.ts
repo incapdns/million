@@ -153,22 +153,30 @@ const processValue = (
   const MAX_DEPTH = 50;
 
   while (value && typeof value === 'object' && value[EXEC_KEY]) {
-    if (depth++ > MAX_DEPTH) {
-      break;
-    }
+    if (depth++ > MAX_DEPTH) break;
 
     try {
       const fn = value.fn;
       let args = value.args || [];
+      const keys = value.k;
 
       if (args.some((arg: any) => arg && typeof arg === 'object' && arg[EXEC_KEY])) {
         args = args.map((arg: any) => {
           if (arg && typeof arg === 'object' && arg[EXEC_KEY]) {
             try {
-              return typeof arg.fn === 'function' ? arg.fn(...(arg.args || [])) : null
-            }
-            catch {
-              return null
+              if (typeof arg.fn === 'function') {
+                let result = arg.fn(...(arg.args || []));
+
+                if (arg.k && arg.k.length > 0) {
+                  for (const key of arg.k) {
+                    result = result?.[key];
+                  }
+                }
+                return result;
+              }
+              return null;
+            } catch {
+              return null;
             }
           }
           return arg;
@@ -176,7 +184,15 @@ const processValue = (
       }
 
       if (typeof fn === 'function') {
-        value = fn(...args);
+        let result = fn(...args);
+
+        if (keys && keys.length > 0) {
+          for (const key of keys) {
+            result = result?.[key];
+          }
+        }
+
+        value = result;
       } else {
         value = null;
         break;
