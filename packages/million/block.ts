@@ -32,13 +32,23 @@ import type { ArrayBlock } from './array';
 import type { EditChild, VElement, Hole, VNode, Edit } from './types';
 import { EXEC_KEY } from '../million/constants';
 
+const createDeepHole = (key: string): any => {
+  const hole = { $: key };
+
+  return new Proxy(hole, {
+    get(target, prop: string) {
+      if (prop === '$') return target.$;
+
+      return createDeepHole(`${key}.${prop}`);
+    },
+  });
+};
+
 const HOLE_PROXY = new Proxy(
   {},
   {
-    // A universal getter will return a Hole instance if props[any] is accessed
-    // Allows code to identify holes in virtual nodes ("digs" them out)
     get(_, key: string): Hole {
-      return { $: key };
+      return createDeepHole(key);
     },
   },
 );

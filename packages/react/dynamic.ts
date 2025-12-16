@@ -39,7 +39,18 @@ export const resolveHoles = ({ vnode, props }: any): any => {
   if (!vnode || typeof vnode !== 'object') return vnode;
 
   if ('$' in vnode) {
-    return props[vnode.$];
+    const key = vnode.$;
+
+    if (key.includes('.')) {
+      const path = key.split('.');
+      let current = props;
+      for (let i = 0; i < path.length; i++) {
+        current = current?.[path[i]];
+      }
+      return current;
+    }
+
+    return props[key];
   }
 
   if (Array.isArray(vnode)) {
