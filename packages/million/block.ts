@@ -130,6 +130,7 @@ const getProp = (props: MillionProps, key: string): any => {
 
   for (let i = 0; i < path.length; i++) {
     if (!current) return undefined;
+    // @ts-ignore
     current = current[path[i]];
   }
 
