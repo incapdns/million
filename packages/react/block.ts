@@ -11,7 +11,7 @@ import type { MillionPortal, MillionProps, Options } from '../types';
 // eslint-disable-next-line camelcase
 import { experimental_options } from '../experimental';
 import { cloneNode$ } from '../million/dom';
-import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, SynchronousEffect } from './constants';
+import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, Effect } from './constants';
 import { processProps, unwrap } from './utils';
 import { useContainer, useNearestParent } from './its-fine';
 import { currentFn, resolveHoles } from './dynamic';
@@ -140,7 +140,7 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
       Fragment,
       {},
       marker,
-      createElement(SynchronousEffect, {
+      createElement(Effect, {
         effect,
         deps: hmrTimestamp ? [hmrTimestamp] : [],
       }),
