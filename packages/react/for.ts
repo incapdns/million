@@ -19,6 +19,7 @@ import type {
 } from '../types';
 import { renderReactScope } from './utils';
 import { RENDER_SCOPE, REGISTRY, SVG_RENDER_SCOPE } from './constants';
+export type { MillionArrayProps };
 
 const MillionArray = <T>({
   each,

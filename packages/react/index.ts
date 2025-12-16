@@ -3,8 +3,8 @@ import { block as internalBlock, patch, mount } from '../million';
 export { block } from './block';
 export { dynamic } from './dynamic';
 export { execute } from './execute';
-export { For } from './for';
-export { If } from './if';
+export { For, MillionArrayProps } from './for';
+export { If, IfProps } from './if';
 export { renderReactScope, unwrap } from './utils';
 export { REGISTRY } from './constants';
 export const INTERNALS = {
