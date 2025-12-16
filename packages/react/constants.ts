@@ -33,11 +33,11 @@ export const SynchronousEffect = ({
 }): null => {
   const depsRef = useRef<DependencyList>([] as DependencyList);
   // @ts-ignore
-  if(!sameArray(depsRef.current, deps)){
+  if(!sameArray(depsRef.current as any, deps as any)){
     effect();
   }
   // @ts-ignore
-  depsRef.current = deps;
+  depsRef.current = deps as any;
   return null;
 };
 
