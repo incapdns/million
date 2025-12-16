@@ -31,9 +31,11 @@ export const SynchronousEffect = ({
   effect: () => void;
   deps?: DependencyList;
 }): null => {
-  const depsRef = useRef<DependencyList>([] as DependencyList);
+  const depsRef = useRef<DependencyList>();
   // @ts-ignore
-  if(!sameArray(depsRef.current as any, deps as any)){
+  if(depsRef.current == undefined ||
+    !sameArray(depsRef.current as any, deps as any))
+  {
     effect();
   }
   // @ts-ignore
