@@ -91,9 +91,22 @@ export const renderToTemplate = (
     if (name === 'className') name = 'class';
 
     if (name.startsWith('on')) {
-      const isValueHole = '$' in value;
+      if (value && typeof value === 'object' && value[EXEC_KEY]) {
+        current.e.push({
+          /* type */ t: EventFlag,
+          /* name */ n: name.slice(2),
+          /* value */ v: value,
+          /* hole */ h: null as unknown as string,
+          /* index */ i: null,
+          /* listener */ l: null,
+          /* patch */ p: null,
+          /* block */ b: null,
+        });
+        continue;
+      }
+
       // Make edits monomorphic
-      if (isValueHole || (typeof value === 'object' && hasHole(value))) {
+      if ('$' in value) {
         current.e.push({
           /* type */ t: EventFlag,
           /* name */ n: name.slice(2),
