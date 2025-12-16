@@ -181,29 +181,17 @@ export const renderToTemplate = (
         continue;
       }
 
-      if (typeof value === 'object' && hasHole(value)) {
-        current.e.push({
-          /* type */ t: AttributeFlag,
-          /* name */ n: name,
-          /* value */ v: value, // Passamos a estrutura inteira (com os holes dentro)
-          /* hole */ h: null as unknown as string,   // Sem chave única
-          /* index */ i: null,
-          /* listener */ l: null,
-          /* patch */ p: null,
-          /* block */ b: null,
-        });
-        continue;
-      }
-
       if (name === 'style' && typeof value === 'object') {
         let style = '';
         for (const key in value) {
-          if (typeof value[key] === 'object') {
+          const val = value[key];
+
+          if (val && typeof val === 'object' && val[EXEC_KEY]) {
             current.e.push({
               /* type */ t: StyleAttributeFlag,
               /* name */ n: key,
-              /* value */ v: null,
-              /* hole */ h: value[key].$,
+              /* value */ v: val,
+              /* hole */ h: null as unknown as string,
               /* index */ i: null,
               /* listener */ l: null,
               /* patch */ p: null,
@@ -212,21 +200,50 @@ export const renderToTemplate = (
             continue;
           }
 
+          if (val && typeof val === 'object' && '$' in val) {
+            current.e.push({
+              /* type */ t: StyleAttributeFlag,
+              /* name */ n: key,
+              /* value */ v: null,
+              /* hole */ h: val.$,
+              /* index */ i: null,
+              /* listener */ l: null,
+              /* patch */ p: null,
+              /* block */ b: null,
+            });
+            continue;
+          }
+
+          // Caso C: Estático
           let kebabKey = '';
           for (let i = 0, j = key.length; i < j; ++i) {
             const char = key.charCodeAt(i);
             if (char < 97) {
-              // If letter is uppercase
               kebabKey += `-${String.fromCharCode(char + 32)}`;
             } else {
               kebabKey += key[i];
             }
           }
-          style += `${kebabKey}:${String(value[key])};`;
+          style += `${kebabKey}:${String(val)};`;
         }
         props += ` style="${style}"`;
         continue;
       }
+
+      if (typeof value === 'object' && hasHole(value)) {
+        current.e.push({
+          /* type */ t: AttributeFlag,
+          /* name */ n: name,
+          /* value */ v: value,
+          /* hole */ h: null as unknown as string,
+          /* index */ i: null,
+          /* listener */ l: null,
+          /* patch */ p: null,
+          /* block */ b: null,
+        });
+        continue;
+      }
+
       props += ` ${name}="${String(value)}"`;
     }
   }
