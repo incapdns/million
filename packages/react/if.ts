@@ -14,15 +14,11 @@ export interface IfProps {
 const smartChoose = (condition: boolean, then: any, elseProp: any) => {
   const target = condition ? then : elseProp;
 
-  const value = (typeof target === 'function' && !isValidElement(target))
+  const value = (typeof target === 'function')
     ? target()
     : target;
 
-  if (value instanceof AbstractBlock) {
-    return value;
-  }
-
-  if (typeof value === 'string' || typeof value === 'number' || value == null) {
+  if (value instanceof AbstractBlock || !isValidElement(value)) {
     return value;
   }
 
