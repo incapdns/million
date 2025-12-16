@@ -13,11 +13,11 @@ export const dynamic = <P>(node: P): P => {
     throw new Error("dynamic() must be called inside a block()");
   }
 
-  if (ctx.block && ctx.el) {
+  if (ctx.block && ctx.getSlot) {
     // @ts-ignore
-    const portal = createPortal(node, ctx.el);
+    const portal = createPortal(node, ctx.getSlot());
 
-    if (ctx.block.v) {
+    if (ctx.block.rtPortals) {
       ctx.block.v.push(portal);
     }
 

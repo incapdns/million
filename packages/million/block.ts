@@ -214,9 +214,27 @@ export class Block extends AbstractBlock {
         const edit = current.e[k]!;
 
         const prevContext = currentFn.context;
+
+        const getSlot = () => {
+          let current = el[TEXT_NODE_CACHE]?.[k];
+          if (!current) current = childAt(el, edit.i!);
+
+          if (current.tagName === 'MILLION-PORTAL') return current;
+
+          const wrapper = document.createElement('million-portal');
+          wrapper.style.display = 'contents';
+
+          replaceChild$.call(el, wrapper, current);
+
+          if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
+          el[TEXT_NODE_CACHE][k] = wrapper;
+
+          return wrapper;
+        };
+
         currentFn.context = {
           block: this,
-          el
+          getSlot
         };
         const value = processValue(edit, this.d!);
         currentFn.context = prevContext;
@@ -351,14 +369,46 @@ export class Block extends AbstractBlock {
         const oldValue = this._v[cursor];
 
         const prevContext = currentFn.context;
-        currentFn.context = { block: this, el };
 
+        const getSlot = () => {
+          let node = el[TEXT_NODE_CACHE]?.[k];
+          if (!node) {
+            node = childAt(el, edit.i!);
+
+            if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
+            el[TEXT_NODE_CACHE][k] = node;
+          }
+
+          if (node && node.tagName === 'MILLION-PORTAL') return node;
+
+          const wrapper = document.createElement('million-portal');
+          wrapper.style.display = 'contents';
+
+          replaceChild$.call(el, wrapper, node);
+
+          el[TEXT_NODE_CACHE][k] = wrapper;
+
+          return wrapper;
+        };
+
+        currentFn.context = { 
+          block: this, 
+          getSlot 
+        };
         const newValue = processValue(edit, newBlock.d!);
-
         currentFn.context = prevContext;
 
         this._v[cursor] = newValue;
         cursor++;
+
+        if (oldValue && oldValue.kind === DYNAMIC && (!newValue || newValue.kind !== DYNAMIC)) {
+          const current = el[TEXT_NODE_CACHE][k];
+          if (current && current.tagName === 'MILLION-PORTAL') {
+            const newTextNode = document.createTextNode('');
+            replaceChild$.call(el, newTextNode, current);
+            el[TEXT_NODE_CACHE][k] = newTextNode;
+          }
+        }
 
         const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === DYNAMIC;
 
