@@ -417,8 +417,10 @@ export class Block extends AbstractBlock {
 
         if (newValue === oldValue || isNewDynamic) {
           if (isNewDynamic && (edit.t & ChildFlag)) {
-            if (el[TEXT_NODE_CACHE] && el[TEXT_NODE_CACHE][k]) {
-              setText(el[TEXT_NODE_CACHE][k], '');
+            const node = el[TEXT_NODE_CACHE] && el[TEXT_NODE_CACHE][k];
+
+            if (node && node.nodeType === 3) {
+              setText(node, '');
             }
           }
           continue;
