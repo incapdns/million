@@ -215,14 +215,12 @@ export const renderToTemplate = (
     return `<${vnode.type}${props} />`;
   }
 
-  // 👎: 'foo' + Block + 'bar' => 'foobaz'.
-  //                                      ↕️ Block edit here
-  // 👍: 'foo' + Block + 'bar'   => 'foo', 'bar'
   let canMergeString = false;
   for (let i = 0, j = vnode.props.children?.length || 0, k = 0; i < j; ++i) {
     const child = vnode.props.children?.[i];
     if (child === null || child === undefined || child === false) continue;
 
+    // 1. Child Hole
     if (typeof child === 'object' && '$' in child) {
       current.e.push({
         /* type */ t: ChildFlag,
@@ -240,16 +238,33 @@ export const renderToTemplate = (
       continue;
     }
 
-    if (child instanceof AbstractBlock) {
-      current.i!.push({
-        /* type */ t: BlockFlag,
+    if (typeof child === 'object' && child[EXEC_KEY]) {
+      current.e.push({
+        /* type */ t: ChildFlag,
         /* name */ n: null,
-        /* value */ v: null,
-        /* hole */ h: null,
+        /* value */ v: child as any,
+        /* hole */ h: null as any,
         /* index */ i,
         /* listener */ l: null,
         /* patch */ p: null,
-        /* block */ b: child,
+        /* block */ b: null,
+      });
+      children += '<!--$-->';
+      canMergeString = false;
+      continue;
+    }
+
+    // 3. Child Block (Static)
+    if (child instanceof AbstractBlock) {
+      current.i!.push({
+        t: BlockFlag,
+        n: null,
+        v: null,
+        h: null,
+        i,
+        l: null,
+        p: null,
+        b: child,
       });
 
       continue;
@@ -283,6 +298,7 @@ export const renderToTemplate = (
       continue;
     }
 
+    // 5. Recursão para elementos HTML aninhados
     canMergeString = false;
     const newPath = path.slice();
     newPath.push(k++);
