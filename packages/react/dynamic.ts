@@ -14,6 +14,7 @@ export const dynamic = <P>(node: P): P => {
   }
 
   if (ctx.block && ctx.el) {
+    // @ts-ignore
     const portal = createPortal(node, ctx.el);
 
     if (ctx.block.v) {
