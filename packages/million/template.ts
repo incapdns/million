@@ -121,6 +121,27 @@ export const renderToTemplate = (
     }
 
     if (value) {
+      if (typeof value === 'object' && value[EXEC_KEY]) {
+        let flag = AttributeFlag;
+        if (name === 'style') {
+          flag = StyleAttributeFlag;
+        } else if (name.charCodeAt(0) === X_CHAR) {
+          flag = SvgAttributeFlag;
+        }
+
+        current.e.push({
+            /* type */ t: flag,
+            /* name */ n: name,
+            /* value */ v: value,
+            /* hole */ h: null as any,
+            /* index */ i: null,
+            /* listener */ l: null,
+            /* patch */ p: null,
+            /* block */ b: null,
+        });
+        continue;
+      }
+
       if (typeof value === 'object' && '$' in value) {
         if (name === 'style') {
           current.e.push({
@@ -234,6 +255,7 @@ export const renderToTemplate = (
       });
 
       children += '<!--$-->';
+      k++;
       canMergeString = false;
       continue;
     }
@@ -250,6 +272,7 @@ export const renderToTemplate = (
         /* block */ b: null,
       });
       children += '<!--$-->';
+      k++;
       canMergeString = false;
       continue;
     }
