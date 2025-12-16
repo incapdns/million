@@ -25,14 +25,12 @@ export const dynamic = <P>(node: P): P => {
 
   if (!currentFn.context.million_map) {
     currentFn.context.million_map = new Map();
-    currentFn.context.rt_million_vec = [];
   }
 
   return {
     kind: DYNAMIC,
     node,
     million_map: currentFn.context.million_map,
-    rt_million_vec: currentFn.context.rt_million_vec
   } as any;
 }
 

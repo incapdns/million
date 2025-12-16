@@ -50,12 +50,14 @@ export const block = <P extends MillionProps>(
     const patch = useRef<((props: P) => void) | null>(null);
     const portalRef = useRef<MillionPortal[]>([]);
 
+    const blockInstance = useRef<any>(null);
+
     const rtPortals = useRef<any[]>([]);
     rtPortals.current = [];
 
     const raw = fn as any;
 
-    if(raw.million_map != undefined) {
+    if (raw.million_map != undefined) {
       // @ts-ignore
       props = { ...props };
 
@@ -67,11 +69,15 @@ export const block = <P extends MillionProps>(
 
     props = processProps(props, forwardedRef, portalRef.current);
 
-    patch.current?.(props);
+    if (patch.current && blockInstance.current) {
+      blockInstance.current.rtPortals = rtPortals.current;
+      patch.current(props);
+    }
 
     const effect = useCallback(() => {
       if (!ref.current && !noSlot) return;
       const currentBlock = blockTarget!(props, props.key);
+      blockInstance.current = currentBlock;
       currentBlock.rtPortals = rtPortals.current;
       if (hmrTimestamp && ref.current?.textContent) {
         ref.current.textContent = '';
@@ -140,7 +146,7 @@ To avoid this error, \`experimental_options.noSlot\` should be false`),
       }),
       children,
       createElement(RenderPortals, {
-        portals: raw.rt_million_vec
+        portals: rtPortals.current
       })
     );
 
