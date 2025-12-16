@@ -50,7 +50,6 @@ const MillionArray = <T>({
     const newChildren = createChildren<T>(each, children, cache, portals, memo);
     const newVNode = mapArray(newChildren);
     arrayPatch$.call(fragmentRef.current, newVNode);
-    fragmentRef.current = newVNode;
   }
 
   const defaultType = svg ? SVG_RENDER_SCOPE : RENDER_SCOPE;
