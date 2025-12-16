@@ -1,5 +1,4 @@
 import { JSX, isValidElement } from 'react';
-import type { ReactNode } from 'react';
 import { dynamic } from './dynamic';
 import { execute } from './execute';
 import { AbstractBlock } from '../million/types';
@@ -7,8 +6,8 @@ import { AbstractBlock } from '../million/types';
 export interface IfProps {
   condition: boolean;
   then?: JSX.Element;
-  else?: ReactNode;
-  children?: ReactNode;
+  else?: JSX.Element;
+  children?: JSX.Element;
 }
 
 const smartChoose = (condition: boolean, then: any, elseProp: any) => {
@@ -29,6 +28,6 @@ const smartChoose = (condition: boolean, then: any, elseProp: any) => {
   return dynamic(value);
 };
 
-export const If = ({ condition, then, else: elseProp, children }: IfProps) => {
-  return execute(smartChoose, condition, then || children, elseProp);
+export const If = ({ condition, then, else: elseProp, children }: IfProps): JSX.Element => {
+  return execute(smartChoose, condition, then || children, elseProp) as any;
 };
