@@ -36,7 +36,6 @@ const MillionArray = <T>({
   if (portals.current.length !== each.length) {
     const newPortals = new Array(each.length);
     portals.current = newPortals;
-    portals.current.length = each.length
   }
 
   const fragmentRef = useRef<ReturnType<typeof mapArray> | null>(null);
