@@ -18,7 +18,7 @@ const smartChoose = (condition: boolean, then: any, elseProp: any) => {
     ? target()
     : target;
 
-  if (value instanceof AbstractBlock || !isValidElement(value)) {
+  if (!isValidElement(value)) {
     return value;
   }
 
