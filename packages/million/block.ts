@@ -39,6 +39,8 @@ const createDeepHole = (key: string): any => {
     get(target, prop: string) {
       if (prop === '$') return target.$;
 
+      if (typeof prop != 'string') return undefined
+
       return createDeepHole(`${key}.${prop}`);
     },
   });
