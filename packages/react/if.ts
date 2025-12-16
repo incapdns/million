@@ -14,7 +14,7 @@ export interface IfProps {
 const smartChoose = (condition: boolean, then: any, elseProp: any) => {
   const target = condition ? then : elseProp;
 
-  const value = (typeof target === 'function' && !target.__million_block && !isValidElement(target))
+  const value = (typeof target === 'function' && !isValidElement(target))
     ? target()
     : target;
 
