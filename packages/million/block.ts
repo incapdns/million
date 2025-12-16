@@ -264,7 +264,8 @@ const processValue = (
       CURRENT_RUNTIME_PROPS = props; 
       
       try {
-        return originalHandler.apply(this, args);
+        // @ts-ignore
+        return originalHandler.apply(this as any, args);
       } finally {
         CURRENT_RUNTIME_PROPS = prevProps;
       }
