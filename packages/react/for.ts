@@ -33,11 +33,6 @@ const MillionArray = <T>({
     current: Array(each.length),
   }));
 
-  if (portals.current.length !== each.length) {
-    const newPortals = new Array(each.length);
-    portals.current = newPortals;
-  }
-
   const fragmentRef = useRef<ReturnType<typeof mapArray> | null>(null);
   const cache = useRef<ArrayCache<T>>({
     each: null,
@@ -128,7 +123,7 @@ const createChildren = <T>(
       props: MillionProps,
       portals: { current: MillionPortal[] },
       index: number,
-      key?: string | number | null // <--- Argumento Dinâmico
+      key?: string | number | null
     ): ReturnType<typeof block> => {
       return block(
         {

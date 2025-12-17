@@ -258,11 +258,11 @@ const processValue = (
 
   if ((edit.t & EventFlag) && typeof value === 'function') {
     const originalHandler = value;
-    
+
     value = function (...args: any[]) {
       const prevProps = CURRENT_RUNTIME_PROPS;
-      CURRENT_RUNTIME_PROPS = props; 
-      
+      CURRENT_RUNTIME_PROPS = props;
+
       try {
         // @ts-ignore
         return originalHandler.apply(this as any, args);
@@ -467,75 +467,67 @@ export class Block extends AbstractBlock {
 
     for (let i = 0, j = this.e.length; i < j; ++i) {
       const current = this.e[i]!;
-      const el: HTMLElement =
-        this.c![i] ?? getCurrentElement(current.p!, root, this.c, i);
+      const el = this.c![i] ?? getCurrentElement(current.p!, root, this.c, i);
 
       for (let k = 0, l = current.e.length; k < l; ++k) {
         const edit = current.e[k]!;
 
-        const rawOld = edit.h ? props[edit.h] : edit.v;
-        const rawNew = edit.h ? newBlock.d[edit.h] : edit.v;
+        const rawOld = edit.h ? getProp(props, edit.h) : edit.v;
+        const rawNew = edit.h ? getProp(newBlock.d, edit.h) : edit.v;
 
         const isExecute = rawNew && typeof rawNew === 'object' && rawNew[EXEC_KEY];
 
-        if (rawOld === rawNew && !isExecute) {
+        const isMutableObject = rawNew && typeof rawNew === 'object';
+
+        if (rawOld === rawNew && !isExecute && !isMutableObject) {
           cursor++;
           continue;
         }
 
         const oldValue = this._v[cursor];
-
         const prevContext = currentFn.context;
 
         const getSlot = () => {
-          let node = el[TEXT_NODE_CACHE]?.[k];
+          if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
+
+          let node = el[TEXT_NODE_CACHE][k];
           if (!node) {
             node = childAt(el, edit.i!);
-
-            if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
             el[TEXT_NODE_CACHE][k] = node;
           }
 
-          if (node && node.tagName === 'MILLION-PORTAL') return node;
+          if (node.tagName === 'MILLION-PORTAL') return node;
 
           const wrapper = document.createElement('million-portal');
           wrapper.style.display = 'contents';
-
           replaceChild$.call(el, wrapper, node);
-
           el[TEXT_NODE_CACHE][k] = wrapper;
-
           return wrapper;
         };
 
-        currentFn.context = {
-          block: this,
-          getSlot
-        };
+        currentFn.context = { block: this, getSlot };
         const newValue = processValue(edit, newBlock.d!);
         currentFn.context = prevContext;
 
         this._v[cursor] = newValue;
         cursor++;
 
+        const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === DYNAMIC;
+
         if (oldValue && oldValue.kind === DYNAMIC && (!newValue || newValue.kind !== DYNAMIC)) {
-          const current = el[TEXT_NODE_CACHE][k];
-          if (current && current.tagName === 'MILLION-PORTAL') {
+          const currentCache = el[TEXT_NODE_CACHE]?.[k];
+          if (currentCache && currentCache.tagName === 'MILLION-PORTAL') {
             const newTextNode = document.createTextNode('');
-            replaceChild$.call(el, newTextNode, current);
+            replaceChild$.call(el, newTextNode, currentCache);
             el[TEXT_NODE_CACHE][k] = newTextNode;
           }
         }
 
-        const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === DYNAMIC;
-
+        // Otimização de Valor Processado (Evita tocar no DOM se o texto final for igual)
         if (newValue === oldValue || isNewDynamic) {
           if (isNewDynamic && (edit.t & ChildFlag)) {
-            const node = el[TEXT_NODE_CACHE] && el[TEXT_NODE_CACHE][k];
-
-            if (node && node.nodeType === 3) {
-              setText(node, '');
-            }
+            const node = el[TEXT_NODE_CACHE]?.[k];
+            if (node?.nodeType === 3) setText(node, '');
           }
           continue;
         }
@@ -548,13 +540,11 @@ export class Block extends AbstractBlock {
         if (edit.t & ChildFlag) {
           if (oldValue instanceof AbstractBlock) {
             const firstEdit = newBlock.e?.[i]?.e[k] as EditChild;
-            const newChildBlock = newBlock.d[firstEdit.h];
-            oldValue.p(newChildBlock);
+            oldValue.p(newBlock.d[firstEdit.h]);
             continue;
           }
 
           if (newValue && typeof newValue === 'object' && 'foreign' in newValue) {
-            // Root Swap Logic
             if (this.r.nodeType === 8 && this.r.nodeValue === '$') {
               const newTargetEl = newValue.current;
               if (newValue.unstable && oldValue !== newValue) {
@@ -565,7 +555,9 @@ export class Block extends AbstractBlock {
               continue;
             }
 
+            if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
             const targetEl = el[TEXT_NODE_CACHE][k];
+
             if (newValue.unstable && oldValue !== newValue) {
               const newTargetEl = newValue.current;
               el[TEXT_NODE_CACHE][k] = newTargetEl;
@@ -576,18 +568,23 @@ export class Block extends AbstractBlock {
             continue;
           }
 
+          if (!el[TEXT_NODE_CACHE]) el[TEXT_NODE_CACHE] = new Array(l);
           setText(
             el[TEXT_NODE_CACHE][k],
-            newValue == null || newValue === false ? '' : String(newValue),
+            newValue == null || newValue === false ? '' : String(newValue)
           );
-        } else if (edit.t & AttributeFlag) {
+        }
+
+        else if (edit.t & AttributeFlag) {
           const name = edit.n!;
           if (name.startsWith('data-') || name.startsWith('_')) {
             el[name] = newValue;
           } else {
             setAttribute(el, name, newValue);
           }
-        } else if (edit.t & StyleAttributeFlag) {
+        }
+
+        else if (edit.t & StyleAttributeFlag) {
           if (typeof newValue === 'string' || typeof newValue === 'number') {
             setStyleAttribute(el, edit.n!, newValue);
           } else {
@@ -597,7 +594,9 @@ export class Block extends AbstractBlock {
               }
             }
           }
-        } else {
+        }
+
+        else {
           setSvgAttribute(el, edit.n!, newValue);
         }
       }
