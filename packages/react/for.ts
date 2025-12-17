@@ -32,7 +32,6 @@ const MillionArray = <T>({
   const [portals] = useState<{ current: MillionPortal[] }>(() => ({
     current: Array(each.length),
   }));
-
   const fragmentRef = useRef<ReturnType<typeof mapArray> | null>(null);
   const cache = useRef<ArrayCache<T>>({
     each: null,
@@ -43,8 +42,7 @@ const MillionArray = <T>({
 
   if (fragmentRef.current && (each !== cache.current.each || !memo)) {
     const newChildren = createChildren<T>(each, children, cache, portals, memo);
-    const newVNode = mapArray(newChildren);
-    arrayPatch$.call(fragmentRef.current, newVNode);
+    arrayPatch$.call(fragmentRef.current, mapArray(newChildren));
   }
 
   const defaultType = svg ? SVG_RENDER_SCOPE : RENDER_SCOPE;
@@ -52,11 +50,12 @@ const MillionArray = <T>({
     Fragment,
     null,
     createElement(as ?? defaultType, { ...rest, ref }),
-    ...portals.current.map((p) => p?.portal),
+    ...portals.current.map((p) => p.portal),
   );
 
   useEffect(() => {
     if (!ref.current || fragmentRef.current) return;
+
     if (cache.current.mounted) return;
 
     const newChildren = createChildren<T>(each, children, cache, portals, memo);
@@ -90,7 +89,6 @@ const createChildren = <T>(
 ): Block[] => {
   const children = Array(each.length);
   const currentCache = cache.current as any;
-
   for (let i = 0, l = each.length; i < l; ++i) {
     if (memo && currentCache.each && currentCache.each[i] === each[i]) {
       children[i] = currentCache.children?.[i];
@@ -102,7 +100,7 @@ const createChildren = <T>(
       if (!currentCache.block) {
         currentCache.block = MapGet$.call(REGISTRY, vnode.type)!;
       }
-      children[i] = currentCache.block!(vnode.props, portals, i, vnode.key);
+      children[i] = currentCache.block!(vnode.props, portals, i);
       continue;
     }
 
@@ -118,12 +116,10 @@ const createChildren = <T>(
     }
 
     const block = createBlock((props?: MillionProps) => props?.scope);
-
     const currentBlock = (
       props: MillionProps,
       portals: { current: MillionPortal[] },
       index: number,
-      key?: string | number | null
     ): ReturnType<typeof block> => {
       return block(
         {
@@ -134,17 +130,14 @@ const createChildren = <T>(
             index,
           ),
         },
-
-        key ? String(key) : (vnode.key ? String(vnode.key) : undefined),
+        vnode.key ? String(vnode.key) : undefined,
       );
     };
 
     MapSet$.call(REGISTRY, vnode.type, currentBlock);
     currentCache.block = currentBlock as any;
-
-    children[i] = currentBlock(vnode.props, portals, i, vnode.key);
+    children[i] = currentBlock(vnode.props, portals, i);
   }
-
   currentCache.each = each;
   currentCache.children = children;
   return children;
