@@ -10,14 +10,13 @@ const version = JSON.parse(
 
 export default defineBuildConfig({
   entries: [
-    './packages/million',
-    './packages/experimental',
-    './packages/jsx-runtime',
-    './packages/compiler',
-    './packages/react',
-    './packages/react-server',
-    './packages/types',
-    './packages/cli',
+    { input: './packages/million/index', name: 'packages/million' },
+    { input: './packages/experimental/index', name: 'packages/experimental' },
+    { input: './packages/jsx-runtime/index', name: 'packages/jsx-runtime' },
+    { input: './packages/compiler/index', name: 'packages/compiler' },
+    { input: './packages/react/index', name: 'packages/react' },
+    { input: './packages/react-server/index', name: 'packages/react-server' },
+    { input: './packages/types/index', name: 'packages/types' },
   ],
   declaration: true,
   clean: true,
