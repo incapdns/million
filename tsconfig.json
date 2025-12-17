@@ -13,7 +13,10 @@
       // Make sure the root d.ts isn't picked up by TS locally
       "react": ["node_modules/react"]
     },
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "sourceMap": true, 
+    "declaration": true,
+    "declarationMap": true
   },
   "include": ["./**/*.ts", "./**/*.tsx"],
   "exclude": ["node_modules", "dist", "*.d.ts", "website"]
