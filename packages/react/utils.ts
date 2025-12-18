@@ -1,7 +1,7 @@
 import { Fragment, createContext, createElement, isValidElement } from 'react';
 import { createPortal } from 'react-dom';
 import type { ComponentProps, ReactNode, Ref } from 'react';
-import type { VNode } from '../million';
+import { type VNode } from '../million';
 import type { MillionPortal } from '../types';
 import { REGISTRY, RENDER_SCOPE } from './constants';
 import { HOLE } from './hole';
@@ -109,16 +109,18 @@ export const renderReactScope = (
   return millionPortal;
 };
 
-const prepareRenderable = (value: any): boolean => {
-  const safeRender = (element: JSX.Element) => {
-    let type = element.type;
-
-    if (typeof type === 'string') {
-      return true;
+const prepareRenderable = <T extends {}>(value: T): T | null => {
+  const safeRender = () => {
+    if(typeof value !== 'object' || !('type' in value)) {
+      return null;
     }
 
-    if (typeof type === 'function' && (type as any).prototype?.isReactComponent) {
-      return false;
+    const raw = value as any;
+
+    let type = raw.type;
+
+    if (typeof type === 'string') {
+      return value;
     }
 
     while (typeof type === 'object' && type !== null) {
@@ -134,32 +136,35 @@ const prepareRenderable = (value: any): boolean => {
     if (typeof type === 'function') {
       try {
         (type as Function)({});
-        element.type = type;
-        return true;
+        return { ...value, type } as T;
       } catch (err: any) {
-        return false;
+        return null;
       }
     }
 
-    return false;
+    return null;
   };
 
+  if(typeof value['type'] === 'function' && 'million_map' in value['type']) {
+    return value;
+  }
+
   if (isValidElement(value)) {
-    return safeRender(value);
+    return safeRender();
   }
 
   if (typeof value === 'string' || typeof value === 'number') {
-    return true;
+    return value;
   }
 
   if (Array.isArray(value)) {
-    return value.every(prepareRenderable);
+    return value.every(prepareRenderable) ? value : null;
   }
 
   const isHole = typeof value === 'object' && value !== null && '$' in value;
   const isExec = typeof value === 'object' && value !== null && value[EXEC_KEY] != undefined;
 
-  return isHole || isExec;
+  return (isHole || isExec) ? value : null;
 };
 
 const createHole = (node: React.ReactNode) => {
@@ -187,10 +192,7 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
     try {
       return unwrap(type(vnode.props ?? {}));
     } catch (e) {
-      const million_map = currentFn.context.million_map;
-      const key = `__int_dyn_${million_map.size}`;
-      million_map.set(key, raw.node);
-      return { $: key } as unknown as VNode;
+      return createHole(vnode);
     }
   }
   if (typeof type === 'object' && '$' in type) return type;
@@ -206,7 +208,8 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
   if (children !== undefined && children !== null) {
     props.children =
       flatten(vnode.props.children)
-        .map(child => prepareRenderable(child) ? unwrap(child) : createHole(child!));
+        .map(child => ({ processed: prepareRenderable(child), child }))
+        .map(({ processed, child }) => processed ? unwrap(processed) : createHole(child));
   }
 
   return {
