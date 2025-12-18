@@ -6,13 +6,13 @@ import {
   patch as patchBlock,
   remove$ as removeBlock,
 } from '../million/block';
-import { MapHas$, MapSet$ } from '../million/constants';
+import { currentFn, MapHas$, MapSet$ } from '../million/constants';
 import type { MillionPortal, MillionProps, Options } from '../types';
 // eslint-disable-next-line camelcase
 import { experimental_options } from '../experimental';
 import { REGISTRY, RENDER_SCOPE, SVG_RENDER_SCOPE, SynchronousEffect } from './constants';
 import { processProps, unwrap } from './utils';
-import { currentFn, resolveHoles } from './dynamic';
+import { resolveHoles } from './hole';
 import { RenderPortals } from './portals';
 
 export const block = <P extends MillionProps>(

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { isValidElement } from 'react';
-import { dynamic } from './dynamic';
+import { hole } from './hole';
 import { execute } from './execute';
 import { AbstractBlock } from '../million/types';
 
@@ -26,7 +26,7 @@ const smartChoose = (condition: boolean | (() => boolean), then: any, elseProp: 
     return value;
   }
 
-  return dynamic(value);
+  return hole(value);
 };
 
 export const If = ({ condition, then, else: elseProp, children }: IfProps): ReactNode => {

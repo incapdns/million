@@ -1,12 +1,10 @@
+import { currentFn } from '../million/constants';
 import { isValidElement, cloneElement } from 'react';
 import { createPortal } from 'react-dom';
 
-// dynamic.ts
-export const DYNAMIC = Symbol("million_dynamic");
+export const HOLE = Symbol("million_hole");
 
-export const currentFn: { context: any } = { context: null };
-
-export const dynamic = <P>(node: P): P => {
+export const hole = <P>(node: P): P => {
   const ctx = currentFn.context;
 
   if (!ctx) {
@@ -21,7 +19,7 @@ export const dynamic = <P>(node: P): P => {
       ctx.block.rtPortals.push(portal);
     }
 
-    return { kind: DYNAMIC } as any;
+    return { kind: HOLE } as any;
   }
 
   if (!currentFn.context.million_map) {
@@ -29,9 +27,8 @@ export const dynamic = <P>(node: P): P => {
   }
 
   return {
-    kind: DYNAMIC,
-    node,
-    million_map: currentFn.context.million_map,
+    kind: HOLE,
+    node
   } as any;
 }
 

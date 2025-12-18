@@ -1,7 +1,7 @@
 import { block as internalBlock, patch, mount } from '../million';
 
 export { block } from './block';
-export { dynamic } from './dynamic';
+export { hole } from './hole';
 export { execute, bind } from './execute';
 export { For } from './for';
 export { If, type IfProps } from './if';

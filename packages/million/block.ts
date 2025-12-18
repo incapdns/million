@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 /* eslint-disable @typescript-eslint/unbound-method */
-import { currentFn, DYNAMIC, resolveHoles } from '../react/dynamic';
+import { HOLE, resolveHoles } from '../react/hole';
 import type { MillionProps } from '../types';
 import {
   cloneNode$,
@@ -27,6 +27,7 @@ import {
   EventFlag,
   StyleAttributeFlag,
   EVENT_PATCH,
+  currentFn,
 } from './constants';
 import type { ArrayBlock } from './array';
 import type { EditChild, VElement, Hole, VNode, Edit } from './types';
@@ -355,7 +356,7 @@ export class Block extends AbstractBlock {
 
         this._v.push(value);
 
-        if (value && value.kind == DYNAMIC) {
+        if (value && value.kind == HOLE) {
           continue;
         }
 
@@ -512,9 +513,9 @@ export class Block extends AbstractBlock {
         this._v[cursor] = newValue;
         cursor++;
 
-        const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === DYNAMIC;
+        const isNewDynamic = newValue && typeof newValue === 'object' && newValue.kind === HOLE;
 
-        if (oldValue && oldValue.kind === DYNAMIC && (!newValue || newValue.kind !== DYNAMIC)) {
+        if (oldValue && oldValue.kind === HOLE && (!newValue || newValue.kind !== HOLE)) {
           const currentCache = el[TEXT_NODE_CACHE]?.[k];
           if (currentCache && currentCache.tagName === 'MILLION-PORTAL') {
             const newTextNode = document.createTextNode('');

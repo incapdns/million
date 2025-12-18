@@ -31,3 +31,5 @@ export const NON_PROPS = new Set$(['href', 'list', 'form', 'tabIndex', 'download
 export const VOID_ELEMENTS = new Set$(["area", "base", "basefont", "bgsound", "br", "col", "command", "embed", "frame", "hr", "image", "img", "input", "isindex", "keygen", "link", "menuitem", "meta", "nextid", "param", "source", "track", "wbr"]);
 
 export const EXEC_KEY = Symbol("million_exec");
+
+export const currentFn: { context: any } = { context: null };

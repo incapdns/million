@@ -4,7 +4,8 @@ import type { ComponentProps, ReactNode, Ref } from 'react';
 import type { VNode } from '../million';
 import type { MillionPortal } from '../types';
 import { REGISTRY, RENDER_SCOPE } from './constants';
-import { DYNAMIC } from './dynamic';
+import { HOLE } from './hole';
+import { currentFn, EXEC_KEY } from '../million/constants';
 
 export const scopedContext = createContext<boolean>(false);
 
@@ -108,12 +109,69 @@ export const renderReactScope = (
   return millionPortal;
 };
 
+const isRenderable = (value: any): boolean => {
+  const safeRender = (element: JSX.Element) => {
+    let type = element.type;
+
+    if (typeof type === 'string') {
+      return true;
+    }
+
+    if (typeof type === 'function' && (type as any).prototype?.isReactComponent) {
+      return false;
+    }
+
+    while (typeof type === 'object' && type !== null) {
+      if ((type as any).type) {
+        type = (type as any).type;
+      } else if ((type as any).render) {
+        type = (type as any).render;
+      } else {
+        break;
+      }
+    }
+
+    if (typeof type === 'function') {
+      try {
+        (type as Function)({});
+        return true;
+      } catch (err: any) {
+        return false;
+      }
+    }
+
+    return false;
+  };
+
+  if (isValidElement(value)) {
+    return safeRender(value);
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isRenderable);
+  }
+
+  const isHole = typeof value === 'object' && value !== null && '$' in value;
+  const isExec = typeof value === 'object' && value !== null && value[EXEC_KEY] != undefined;
+
+  return isHole || isExec;
+};
+
+const createHole = (node: React.ReactNode) => {
+  const million_map = currentFn.context.million_map;
+  const key = `__int_dyn_${million_map.size}`;
+  million_map.set(key, node);
+  return { $: key } as unknown as VNode;
+}
+
 export const unwrap = (vnode: JSX.Element | null): VNode => {
   let raw = vnode as any;
-  if (raw && raw.kind === DYNAMIC) {
-    const key = `__int_dyn_${raw.million_map.size}`;
-    raw.million_map.set(key, raw.node);
-    return { $: key } as unknown as VNode;
+  if (raw && raw.kind === HOLE) {
+    return createHole(raw.node)
   }
 
   if (typeof vnode !== 'object' || vnode === null || !('type' in vnode)) {
@@ -125,12 +183,18 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
 
   let type = vnode.type;
   if (typeof type === 'function') {
-    return unwrap(type(vnode.props ?? {}));
+    try {
+      return unwrap(type(vnode.props ?? {}));
+    } catch (e) {
+      const million_map = currentFn.context.million_map;
+      const key = `__int_dyn_${million_map.size}`;
+      million_map.set(key, raw.node);
+      return { $: key } as unknown as VNode;
+    }
   }
   if (typeof type === 'object' && '$' in type) return type;
 
   const props = { ...vnode.props };
-  // emotion support
   if ('css' in props && '__EMOTION_TYPE_PLEASE_DO_NOT_USE__' in props) {
     props.style = props.css.styles;
     type = props.__EMOTION_TYPE_PLEASE_DO_NOT_USE__;
@@ -139,13 +203,13 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
   }
   const children = vnode.props?.children;
   if (children !== undefined && children !== null) {
-    props.children = flatten(vnode.props.children).map((child) =>
-      unwrap(child),
-    );
+    props.children =
+      flatten(vnode.props.children)
+        .map(child => isRenderable(child) ? unwrap(child) : createHole(child!));
   }
 
   return {
-    type, // lets pretend no function go through
+    type,
     props,
   };
 };
