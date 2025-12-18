@@ -109,7 +109,7 @@ export const renderReactScope = (
   return millionPortal;
 };
 
-const isRenderable = (value: any): boolean => {
+const prepareRenderable = (value: any): boolean => {
   const safeRender = (element: JSX.Element) => {
     let type = element.type;
 
@@ -134,6 +134,7 @@ const isRenderable = (value: any): boolean => {
     if (typeof type === 'function') {
       try {
         (type as Function)({});
+        element.type = type;
         return true;
       } catch (err: any) {
         return false;
@@ -152,7 +153,7 @@ const isRenderable = (value: any): boolean => {
   }
 
   if (Array.isArray(value)) {
-    return value.every(isRenderable);
+    return value.every(prepareRenderable);
   }
 
   const isHole = typeof value === 'object' && value !== null && '$' in value;
@@ -205,7 +206,7 @@ export const unwrap = (vnode: JSX.Element | null): VNode => {
   if (children !== undefined && children !== null) {
     props.children =
       flatten(vnode.props.children)
-        .map(child => isRenderable(child) ? unwrap(child) : createHole(child!));
+        .map(child => prepareRenderable(child) ? unwrap(child) : createHole(child!));
   }
 
   return {
